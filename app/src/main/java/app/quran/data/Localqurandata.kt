@@ -65,6 +65,7 @@ fun PageJson.toQuranPage(): QuranPage {
         pageNumber = pageNumber,
         verses     = verses,
         juzNumber  = juz,
-        hizbNumber = hizb
+        hizbNumber = hizb,
+        rubNumber = rub
     )
 }

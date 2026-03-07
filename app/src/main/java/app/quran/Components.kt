@@ -194,7 +194,7 @@ fun SurahHeaderBanner(nameArabic: String, nameFont: FontFamily = QuranFonts.Amir
 
 @Composable
 fun BismillahLine(
-    fontSize     : TextUnit   = (LocalConfiguration.current.screenWidthDp * 0.044f).sp,
+    fontSize     : TextUnit   = (LocalConfiguration.current.screenWidthDp * 0.040f).sp,
     bismillahFont: FontFamily = QuranFonts.AmiriQuran
 ) {
     Row(
@@ -324,13 +324,12 @@ fun MushafLine(
 }
 
 enum class AyahPlayStatus {
-    NORMAL,   // audio not active
-    PAST,     // already recited → full opacity, normal color
-    CURRENT,  // being recited right now → active word lit in GoldBlaze, rest dimmed
+    NORMAL,
+    PAST,
+    CURRENT,
     FUTURE
 }
 
-// ── WordChip ───────────────────────────────────────────────────────────────────
 @Composable
 fun WordChip(
     word        : Word,
@@ -346,22 +345,13 @@ fun WordChip(
 ) {
     val isEnd        = word.charTypeName == "end"
     val displayText  = if (isEnd) arabicVerseEndText(verseNumber) else word.text
-    val resolvedSize = if (isEnd) endFontSize * 0.78f else fontSize
+    val resolvedSize = if (isEnd) endFontSize * 0.75f else fontSize
 
-    // ── Colour + weight logic ─────────────────────────────────────────────────
-    // Priority (highest → lowest):
-    //   1. Currently spoken word       → GoldBlaze, ExtraBold  (spotlight word)
-    //   2. End marker                  → VerseEndColor (unchanged always)
-    //   3. Selected-ayah tint          → Gold 75% (only when no audio active)
-    //   4. CURRENT ayah, non-lit words → dimmed 22%  (spotlight effect on ayah)
-    //   5. PAST / FUTURE / NORMAL      → ArabicText full 100%  ← FIXED
     val textColor: Color = when {
-        isAudioWord                          -> QuranColors.GoldBlaze
+        isAudioWord                          -> QuranColors.GoldWarm
         isEnd                                -> QuranColors.VerseEndColor
         isAyah                               -> QuranColors.Gold.copy(alpha = 0.75f)
-        // Only the currently-recited ayah gets the dim treatment on non-active words
         ayahStatus == AyahPlayStatus.CURRENT -> QuranColors.ArabicText.copy(alpha = 0.22f)
-        // PAST, FUTURE, NORMAL → full opacity, always readable
         else                                 -> QuranColors.ArabicText
     }
 

@@ -76,7 +76,8 @@ data class QuranPage(
     val pageNumber: Int,
     val verses: List<Verse>,
     val juzNumber: Int,
-    val hizbNumber: Int
+    val hizbNumber: Int,
+    val rubNumber: Int
 )
 
 data class WordInLine(

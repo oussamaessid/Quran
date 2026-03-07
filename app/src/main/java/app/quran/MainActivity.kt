@@ -22,7 +22,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.quran.viewmodel.QuranViewModel
 
-enum class AppScreen { HOME, QURAN, QIBLA }
+enum class AppScreen { HOME, QURAN, QIBLA, TASBIH, ADHKAR }
 
 class MainActivity : ComponentActivity() {
 
@@ -49,18 +49,15 @@ class MainActivity : ComponentActivity() {
             var permissionGranted by remember { mutableStateOf(hasPermission()) }
             var gpsEnabled        by remember { mutableStateOf(hasGps()) }
 
-            // ── Launcher permission Android ───────────────────────────────────
             val permLauncher = rememberLauncherForActivityResult(
                 ActivityResultContracts.RequestMultiplePermissions()
             ) { result ->
                 permissionGranted =
                     result[Manifest.permission.ACCESS_FINE_LOCATION]  == true ||
                             result[Manifest.permission.ACCESS_COARSE_LOCATION] == true
-                // Re-check GPS aussi après le retour du dialog
                 gpsEnabled = hasGps()
             }
 
-            // ── Re-vérifier à chaque retour dans l'app ────────────────────────
             val lifecycle = LocalLifecycleOwner.current.lifecycle
             DisposableEffect(lifecycle) {
                 val observer = LifecycleEventObserver { _, event ->
@@ -86,22 +83,30 @@ class MainActivity : ComponentActivity() {
                 ) { screen ->
                     when (screen) {
                         AppScreen.HOME -> HomeScreen(
-                            permissionGranted    = permissionGranted,
-                            gpsEnabled           = gpsEnabled,
-                            onRequestPermission  = {
+                            permissionGranted   = permissionGranted,
+                            gpsEnabled          = gpsEnabled,
+                            onRequestPermission = {
                                 permLauncher.launch(arrayOf(
                                     Manifest.permission.ACCESS_FINE_LOCATION,
                                     Manifest.permission.ACCESS_COARSE_LOCATION
                                 ))
                             },
-                            onOpenQuran = { currentScreen = AppScreen.QURAN },
-                            onOpenQibla = { currentScreen = AppScreen.QIBLA }
+                            onOpenQuran  = { currentScreen = AppScreen.QURAN },
+                            onOpenQibla  = { currentScreen = AppScreen.QIBLA },
+                            onOpenTasbih = { currentScreen = AppScreen.TASBIH },
+                            onOpenAdhkar = { currentScreen = AppScreen.ADHKAR }
                         )
                         AppScreen.QURAN -> QuranScreen(
                             vm     = quranVm,
                             onBack = { currentScreen = AppScreen.HOME }
                         )
                         AppScreen.QIBLA -> QiblaScreen(
+                            onBack = { currentScreen = AppScreen.HOME }
+                        )
+                        AppScreen.TASBIH -> TasbihScreen(
+                            onBack = { currentScreen = AppScreen.HOME }
+                        )
+                        AppScreen.ADHKAR -> AdhkarScreen(
                             onBack = { currentScreen = AppScreen.HOME }
                         )
                     }

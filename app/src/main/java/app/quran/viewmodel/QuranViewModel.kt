@@ -13,15 +13,26 @@ import kotlinx.coroutines.flow.*
 class QuranViewModel(application: Application) : AndroidViewModel(application) {
 
     companion object {
-        const val TOTAL_PAGES             = 604
+        const val TOTAL_PAGES             = 606
         private const val PREFETCH_RADIUS = 2
-        private val AUDIO_URLS = (1..114).associate { id ->
-            id to "https://download.quranicaudio.com/qdc/mishari_al_afasy/murattal/$id.mp3"
+
+        /** Full surah MP3 — used for playSurahFull only */
+        private fun surahUrl(surahId: Int) =
+            "https://download.quranicaudio.com/qdc/mishari_al_afasy/murattal/$surahId.mp3"
+
+        /**
+         * Individual ayah MP3 — no seeking, always exact.
+         * Format: https://verses.quran.com/Alafasy/mp3/SSSAAA.mp3
+         */
+        private fun ayahUrl(surahId: Int, ayahNumber: Int): String {
+            val s = surahId.toString().padStart(3, '0')
+            val a = ayahNumber.toString().padStart(3, '0')
+            return "https://verses.quran.com/Alafasy/mp3/$s$a.mp3"
         }
     }
 
-    private val repository    = QuranLocalRepository(application)
-    private val savedRepo     = SavedAyahsRepository.get(application)
+    private val repository = QuranLocalRepository(application)
+    private val savedRepo  = SavedAyahsRepository.get(application)
 
     // ── Pages & chapters ──────────────────────────────────────────────────────
     private val _pages         = MutableStateFlow<Map<Int, UiState<QuranPage>>>(emptyMap())
@@ -41,9 +52,8 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
 
     val savedAyahs: StateFlow<List<SavedAyah>> = savedRepo.saved
 
-    fun toggleSaveAyah(verseKey: String, surahName: String, pageNumber: Int) {
+    fun toggleSaveAyah(verseKey: String, surahName: String, pageNumber: Int) =
         savedRepo.toggle(verseKey, surahName, pageNumber)
-    }
 
     fun isAyahSaved(verseKey: String): Boolean = savedRepo.isSaved(verseKey)
 
@@ -56,10 +66,6 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
     private val _showAudioSheet = MutableStateFlow(false)
     val showAudioSheet: StateFlow<Boolean> = _showAudioSheet.asStateFlow()
 
-    /**
-     * false  → show AyahAudioChoiceBar (user hasn't chosen yet)
-     * true   → show QuranAudioMiniBar  (audio started, show controls)
-     */
     private val _audioChoiceMade = MutableStateFlow(false)
     val audioChoiceMade: StateFlow<Boolean> = _audioChoiceMade.asStateFlow()
 
@@ -75,7 +81,8 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
     private val audioPlayer = QuranAudioPlayer()
     val playbackInfo: StateFlow<AudioPlaybackInfo> = audioPlayer.playbackInfo
 
-    @Volatile private var currentSurahTiming: SurahAudioTiming? = null
+    @Volatile private var currentSurahTiming : SurahAudioTiming? = null
+    @Volatile private var ayahTimingOffset   : Long              = 0L
 
     private val _currentAudioSurahId = MutableStateFlow(0)
     val currentAudioSurahId: StateFlow<Int> = _currentAudioSurahId.asStateFlow()
@@ -83,14 +90,14 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
     private val _showSurahAudioBar = MutableStateFlow(false)
     val showSurahAudioBar: StateFlow<Boolean> = _showSurahAudioBar.asStateFlow()
 
-    /** Job that auto-stops audio at end of selected ayah (AYAH_ONLY mode). */
-    private var ayahOnlyJob: Job? = null
-
-    /**
-     * Saves the ayah key that was selected BEFORE audio started,
-     * so we can restore it after audio finishes.
-     */
+    private var playlistJob     : Job?    = null   // drives "ayah + reste" playlist
     private var _previousAyahKey: String? = null
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Playlist state — used by playAyahAndRest to chain individual ayah files
+    // ─────────────────────────────────────────────────────────────────────────
+    private var playlistQueue   : List<String> = emptyList()  // remaining verseKeys
+    private var currentVerseKey : String       = ""
 
     // ── Init ──────────────────────────────────────────────────────────────────
     init {
@@ -99,10 +106,9 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
             loadPagesAround(1)
         }
 
-        // Polling loop — updates audioHighlight ~12fps from playback position
+        // Polling loop — word highlight ~12fps
         viewModelScope.launch {
             var wasPlaying = false
-
             while (isActive) {
                 delay(80)
                 val info   = audioPlayer.playbackInfo.value
@@ -110,30 +116,36 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
 
                 if (info.state == AudioPlayerState.PLAYING && timing != null) {
                     wasPlaying = true
-                    val word = timing.wordAt(info.positionMs)
+                    val word = timing.wordAt(info.positionMs + ayahTimingOffset)
                     val next: Pair<String, Int>? =
                         if (word != null) word.verseKey to word.position else null
                     if (_audioHighlight.value != next) _audioHighlight.value = next
-                } else {
+
+                } else if (info.state == AudioPlayerState.STOPPED ||
+                    info.state == AudioPlayerState.IDLE) {
+
                     if (_audioHighlight.value != null) _audioHighlight.value = null
 
-                    // Restore selected ayah when audio finishes naturally
-                    if (wasPlaying &&
-                        (info.state == AudioPlayerState.STOPPED || info.state == AudioPlayerState.IDLE) &&
-                        _audioChoiceMade.value &&
-                        _previousAyahKey != null
-                    ) {
-                        wasPlaying = false
-                        val restored = _previousAyahKey
-                        _previousAyahKey = null
-                        _audioChoiceMade.value = false
-                        _selectedAyahKey.value = restored
-                        _showAudioSheet.value  = true   // re-show the choice bar
-                    } else if (info.state == AudioPlayerState.STOPPED ||
-                        info.state == AudioPlayerState.IDLE) {
+                    if (wasPlaying && _audioChoiceMade.value && _previousAyahKey != null) {
+                        // Playlist not active → audio finished → restore selection bar
+                        if (playlistQueue.isEmpty()) {
+                            wasPlaying = false
+                            val restored       = _previousAyahKey
+                            _previousAyahKey   = null
+                            _audioChoiceMade.value = false
+                            _selectedAyahKey.value = restored
+                            _showAudioSheet.value  = true
+                        }
+                        // If playlist is active, playlistJob handles advancing
+                    } else if (wasPlaying) {
                         wasPlaying = false
                     }
+
+                } else {
+                    if (_audioHighlight.value != null) _audioHighlight.value = null
                 }
+
+                if (info.state == AudioPlayerState.PLAYING) wasPlaying = true
             }
         }
     }
@@ -168,12 +180,8 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
 
     fun onNavigationConsumed() { _navigateToPageIndex.value = null }
 
-    /**
-     * Navigate to a page by its 0-based index.
-     */
     fun navigateToPage(zeroBasedIndex: Int) {
-        val clamped = zeroBasedIndex.coerceIn(0, TOTAL_PAGES - 1)
-        _navigateToPageIndex.value = clamped
+        _navigateToPageIndex.value = zeroBasedIndex.coerceIn(0, TOTAL_PAGES - 1)
     }
 
     private suspend fun loadPagesAround(pageNumber: Int) {
@@ -186,6 +194,22 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun loadSinglePage(pageNumber: Int) {
         if (_pages.value[pageNumber] != null) return
+
+        if (pageNumber == 605 || pageNumber == 606) {
+            _pages.update {
+                it + (pageNumber to UiState.Success(
+                    QuranPage(
+                        pageNumber = pageNumber,
+                        verses     = emptyList(),
+                        juzNumber  = 30,
+                        hizbNumber = 60,
+                        rubNumber  = 0
+                    )
+                ))
+            }
+            return
+        }
+
         _pages.update { it + (pageNumber to UiState.Loading) }
         val state = repository.loadPage(pageNumber).fold(
             onSuccess = { UiState.Success(it) },
@@ -215,7 +239,6 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
         val newKey = if (_selectedAyahKey.value == verseKey) null else verseKey
         _selectedAyahKey.value = newKey
         _showAudioSheet.value  = newKey != null
-        // Always reset to choice bar — user must pick an action
         _audioChoiceMade.value = false
         _previousAyahKey       = null
         if (newKey == null) stopAudio()
@@ -232,90 +255,106 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
     // ── Audio: choice bar actions ─────────────────────────────────────────────
 
     /**
-     * Option 1 — Play the selected ayah only, then auto-stop.
+     * 🔊 Play this ayah only — individual ayah file, startMs = 0, no seek.
      */
     fun playAyahOnly(verseKey: String) {
-        // Save the current selection before clearing it
         _previousAyahKey       = _selectedAyahKey.value ?: verseKey
-        // Clear selection while audio plays
         _selectedAyahKey.value = null
         _audioChoiceMade.value = true
-        ayahOnlyJob?.cancel()
+        _showAudioSheet.value  = true
+        stopPlaylist()
 
-        val surahId     = verseKey.substringBefore(":").toIntOrNull() ?: return
-        val verseNum    = verseKey.substringAfter(":").toIntOrNull() ?: return
-        val url         = AUDIO_URLS[surahId] ?: return
-        val versesCount = _chapters.value.find { it.id == surahId }?.versesCount ?: 0
+        val surahId = verseKey.substringBefore(":").toIntOrNull() ?: return
+        val ayahNum = verseKey.substringAfter(":").toIntOrNull()  ?: return
 
         viewModelScope.launch(Dispatchers.IO) {
             ensureTimingLoaded(surahId)
-            val timing  = currentSurahTiming ?: return@launch
-            val startMs = timing.verseStartMs(verseKey) ?: 0L
+            // Offset so timing.wordAt(position + offset) maps correctly
+            ayahTimingOffset = currentSurahTiming?.verseStartMs(verseKey) ?: 0L
+            currentVerseKey  = verseKey
+            playlistQueue    = emptyList()
+            audioPlayer.play(ayahUrl(surahId, ayahNum), startMs = 0L)
+        }
+    }
 
-            val endMs: Long? = if (verseNum < versesCount) {
-                timing.verseStartMs("$surahId:${verseNum + 1}")
-            } else null
+    /**
+     * 🎧 Play from selected ayah to end of surah.
+     * Chains individual ayah files — no seeking at all.
+     * ayah N finishes → ayah N+1 starts automatically.
+     */
+    fun playAyahAndRest(verseKey: String) {
+        _previousAyahKey       = _selectedAyahKey.value ?: verseKey
+        _selectedAyahKey.value = null
+        _audioChoiceMade.value = true
+        _showAudioSheet.value  = true
+        stopPlaylist()
 
-            audioPlayer.play(url, startMs)
+        val surahId     = verseKey.substringBefore(":").toIntOrNull() ?: return
+        val startAyah   = verseKey.substringAfter(":").toIntOrNull()  ?: return
+        val versesCount = _chapters.value.find { it.id == surahId }?.versesCount ?: return
 
-            ayahOnlyJob = viewModelScope.launch {
-                while (isActive) {
-                    delay(80)
-                    val info   = audioPlayer.playbackInfo.value
-                    val stopAt = endMs ?: info.durationMs
-                    if (info.state == AudioPlayerState.PLAYING
-                        && stopAt > 0L
-                        && info.positionMs >= stopAt
-                    ) {
-                        audioPlayer.stop()
-                        // Restoration is handled by the polling loop
-                        break
+        // Build queue: selected ayah → last ayah of surah
+        val queue = (startAyah..versesCount).map { "$surahId:$it" }
+
+        viewModelScope.launch(Dispatchers.IO) {
+            ensureTimingLoaded(surahId)
+            playlistQueue = queue.drop(1)   // rest after first
+            playAyahFromQueue(surahId, queue.first())
+        }
+    }
+
+    /** Plays one ayah from the playlist, then schedules the next on completion. */
+    private fun playAyahFromQueue(surahId: Int, verseKey: String) {
+        val ayahNum = verseKey.substringAfter(":").toIntOrNull() ?: return
+        currentVerseKey  = verseKey
+        ayahTimingOffset = currentSurahTiming?.verseStartMs(verseKey) ?: 0L
+
+        audioPlayer.play(ayahUrl(surahId, ayahNum), startMs = 0L)
+
+        // Watch for completion, then advance the queue
+        playlistJob = viewModelScope.launch {
+            while (isActive) {
+                delay(80)
+                val state = audioPlayer.playbackInfo.value.state
+                if (state == AudioPlayerState.STOPPED || state == AudioPlayerState.IDLE) {
+                    val next = playlistQueue.firstOrNull()
+                    if (next != null) {
+                        playlistQueue = playlistQueue.drop(1)
+                        withContext(Dispatchers.IO) {
+                            playAyahFromQueue(surahId, next)
+                        }
+                    } else {
+                        // Playlist finished → restore selection bar
+                        playlistQueue    = emptyList()
+                        currentVerseKey  = ""
+                        ayahTimingOffset = 0L
+                        _previousAyahKey?.let { restored ->
+                            _previousAyahKey       = null
+                            _audioChoiceMade.value = false
+                            _selectedAyahKey.value = restored
+                            _showAudioSheet.value  = true
+                        }
                     }
-                    if (info.state == AudioPlayerState.STOPPED
-                        || info.state == AudioPlayerState.IDLE
-                    ) break
+                    break
                 }
             }
         }
     }
 
     /**
-     * Option 2 — Play from selected ayah to end of surah.
-     */
-    fun playAyahAndRest(verseKey: String) {
-        // Save the current selection before clearing it
-        _previousAyahKey       = _selectedAyahKey.value ?: verseKey
-        // Clear selection while audio plays
-        _selectedAyahKey.value = null
-        _audioChoiceMade.value = true
-        ayahOnlyJob?.cancel()
-        playAudioFromVerse(verseKey)
-    }
-
-    /**
-     * Option 3 — Play whole surah from the beginning (navigates to surah's first page).
+     * 🎵 Play whole surah from beginning — full surah file, no seek.
      */
     fun playSurahFull(verseKey: String) {
         val surahId = verseKey.substringBefore(":").toIntOrNull() ?: return
-        // Save current selection — no restoration for full surah play
         _previousAyahKey       = null
         _selectedAyahKey.value = null
         _audioChoiceMade.value = false
+        ayahTimingOffset       = 0L
+        stopPlaylist()
         playSurahAndNavigate(surahId, autoPlay = true)
     }
 
-    // ── Audio: single ayah mini-bar (internal helper) ─────────────────────────
-    fun playAudioFromVerse(verseKey: String) {
-        val surahId = verseKey.substringBefore(":").toIntOrNull() ?: return
-        val url     = AUDIO_URLS[surahId] ?: return
-        viewModelScope.launch(Dispatchers.IO) {
-            ensureTimingLoaded(surahId)
-            val startMs = currentSurahTiming?.verseStartMs(verseKey) ?: 0L
-            audioPlayer.play(url, startMs)
-        }
-    }
-
-    // ── Audio: full surah ─────────────────────────────────────────────────────
+    // ── Audio: surah-level ────────────────────────────────────────────────────
     fun playSurahAndNavigate(surahId: Int, autoPlay: Boolean = false) {
         val chapter   = _chapters.value.find { it.id == surahId } ?: return
         val firstPage = chapter.pages.firstOrNull() ?: return
@@ -324,19 +363,19 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
         _selectedAyahKey.value = null
         _audioChoiceMade.value = false
         _previousAyahKey       = null
+        ayahTimingOffset       = 0L
+        stopPlaylist()
 
         audioPlayer.stop()
         _audioHighlight.value      = null
         currentSurahTiming         = null
         _currentAudioSurahId.value = surahId
-
         _navigateToPageIndex.value = firstPage - 1
         _showSurahAudioBar.value   = true
 
-        val url = AUDIO_URLS[surahId] ?: return
         viewModelScope.launch(Dispatchers.IO) {
             ensureTimingLoaded(surahId)
-            if (autoPlay) audioPlayer.play(url, 0L)
+            if (autoPlay) audioPlayer.play(surahUrl(surahId), 0L)
         }
     }
 
@@ -348,15 +387,12 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
     fun togglePlayPause() {
         val surahId = _currentAudioSurahId.value
         val state   = audioPlayer.playbackInfo.value.state
+        val isNotStarted = state == AudioPlayerState.IDLE || state == AudioPlayerState.STOPPED
 
-        val isNotStartedYet = state == AudioPlayerState.IDLE
-                || state == AudioPlayerState.STOPPED
-
-        if (isNotStartedYet && surahId > 0) {
-            val url = AUDIO_URLS[surahId] ?: return
+        if (isNotStarted && surahId > 0) {
             viewModelScope.launch(Dispatchers.IO) {
                 ensureTimingLoaded(surahId)
-                audioPlayer.play(url, 0L)
+                audioPlayer.play(surahUrl(surahId), 0L)
             }
         } else {
             audioPlayer.togglePlayPause()
@@ -364,16 +400,24 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun stopAudio() {
-        ayahOnlyJob?.cancel()
-        ayahOnlyJob = null
+        stopPlaylist()
         audioPlayer.stop()
         _audioHighlight.value      = null
         currentSurahTiming         = null
+        ayahTimingOffset           = 0L
         _currentAudioSurahId.value = 0
         _previousAyahKey           = null
+        playlistQueue              = emptyList()
+        currentVerseKey            = ""
     }
 
     fun seekAudio(ms: Long) = audioPlayer.seekTo(ms)
+
+    private fun stopPlaylist() {
+        playlistJob?.cancel()
+        playlistJob   = null
+        playlistQueue = emptyList()
+    }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
     private suspend fun ensureTimingLoaded(surahId: Int) {
@@ -386,7 +430,7 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
 
     override fun onCleared() {
         super.onCleared()
-        ayahOnlyJob?.cancel()
+        stopPlaylist()
         audioPlayer.release()
     }
 }
