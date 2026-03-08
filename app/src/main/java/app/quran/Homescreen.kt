@@ -48,7 +48,8 @@ fun HomeScreen(
     onOpenQuran        : () -> Unit,
     onOpenQibla        : () -> Unit,
     onOpenTasbih       : () -> Unit,
-    onOpenAdhkar       : () -> Unit
+    onOpenAdhkar       : () -> Unit,
+    onOpenSalat        : () -> Unit,          // ← NOUVEAU
 ) {
     val state         by prayerVm.state.collectAsStateWithLifecycle()
     val context       = LocalContext.current
@@ -102,6 +103,7 @@ fun HomeScreen(
                     NavCardLandscape("🧭","القبلة","Al-Qibla","Direction de la Mecque", onOpenQibla)
                     NavCardLandscape("📿","التسبيح","Tasbih","Compteur de dhikr", onOpenTasbih)
                     NavCardLandscape("🤲","الأذكار","Adhkar","Remembrances coraniques", onOpenAdhkar)
+                    NavCardLandscape("🕌","الصلاة","Salat","Compteur rak'ahs · capteur lumière", onOpenSalat) // ← NOUVEAU
                     Text("بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ", fontSize = 12.sp,
                         color = QuranColors.GoldDim.copy(alpha = 0.5f),
                         style = TextStyle(textDirection = TextDirection.Rtl),
@@ -141,7 +143,6 @@ fun HomeScreen(
 
                 Spacer(Modifier.height(20.dp))
 
-                // ── 3 vertical nav cards — palette or brûlé homogène ─────────
                 Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     NavCardVertical(
                         icon          = "📖",
@@ -161,10 +162,10 @@ fun HomeScreen(
                         titleLatin    = "Al-Qibla",
                         subtitle      = "Direction de La Mecque",
                         badge         = "BOUSSOLE",
-                        accentColor   = QuranColors.GoldBright,
-                        titleColor    = QuranColors.GoldAccent,
-                        gradientStart = Color(0xFF241500),
-                        gradientEnd   = Color(0xFF160D00),
+                        accentColor   = QuranColors.GoldBlaze,
+                        titleColor    = QuranColors.GoldBlaze,
+                        gradientStart = Color(0xFF2A1A04),
+                        gradientEnd   = Color(0xFF1A0C00),
                         onClick       = onOpenQibla
                     )
                     NavCardVertical(
@@ -173,10 +174,10 @@ fun HomeScreen(
                         titleLatin    = "Tasbih",
                         subtitle      = "Compteur de dhikr",
                         badge         = "DHIKR",
-                        accentColor   = QuranColors.Gold,
-                        titleColor    = QuranColors.GoldWarm,
-                        gradientStart = Color(0xFF1E1100),
-                        gradientEnd   = Color(0xFF120A00),
+                        accentColor   = QuranColors.GoldBlaze,
+                        titleColor    = QuranColors.GoldBlaze,
+                        gradientStart = Color(0xFF2A1A04),
+                        gradientEnd   = Color(0xFF1A0C00),
                         onClick       = onOpenTasbih
                     )
                     NavCardVertical(
@@ -185,31 +186,39 @@ fun HomeScreen(
                         titleLatin    = "Adhkar & Duas",
                         subtitle      = "Remembrances coraniques",
                         badge         = "ADHKAR",
-                        accentColor   = QuranColors.GoldEmber,
-                        titleColor    = QuranColors.GoldDim,
-                        gradientStart = Color(0xFF180E00),
-                        gradientEnd   = Color(0xFF0E0800),
+                        accentColor   = QuranColors.GoldBlaze,
+                        titleColor    = QuranColors.GoldBlaze,
+                        gradientStart = Color(0xFF2A1A04),
+                        gradientEnd   = Color(0xFF1A0C00),
                         onClick       = onOpenAdhkar
                     )
+                    // ── NOUVELLE CARTE SALAT ──────────────────────────────────
+                    NavCardVertical(
+                        icon          = "🕌",
+                        titleArabic   = "الصلاة",
+                        titleLatin    = "Salat",
+                        subtitle      = "Compteur rak'ahs · capteur lumière",
+                        badge         = "RAK'AHS",
+                        accentColor   = QuranColors.GoldBlaze,
+                        titleColor    = QuranColors.GoldBlaze,
+                        gradientStart = Color(0xFF2A1A04),
+                        gradientEnd   = Color(0xFF1A0C00),
+                        onClick       = onOpenSalat
+                    )
                 }
-
-                Spacer(Modifier.height(24.dp))
-                Text(
-                    "بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ",
-                    fontSize = 13.sp, color = QuranColors.GoldDim.copy(alpha = 0.4f),
-                    style = TextStyle(textDirection = TextDirection.Rtl),
-                    textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(Modifier.height(24.dp))
+//
+//                Spacer(Modifier.height(24.dp))
+//                Text(
+//                    "بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ",
+//                    fontSize = 13.sp, color = QuranColors.GoldDim.copy(alpha = 0.4f),
+//                    style = TextStyle(textDirection = TextDirection.Rtl),
+//                    textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()
+//                )
+//                Spacer(Modifier.height(24.dp))
             }
         }
     }
 }
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  PRAYER TIMES CARD — redesign or brûlé sans الشروق ni Actualiser
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
 private val prayerIcons = mapOf(
     "Fajr"    to "🌙",
     "Dhuhr"   to "☀️",
@@ -383,10 +392,6 @@ fun PrayerTimesCard(pt: app.quran.viewmodel.PrayerTimes) {
     }
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  PRAYER ROW CREATIVE
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
 @Composable
 fun PrayerRowCreative(
     arabic: String, latin: String, time: String,
@@ -455,10 +460,6 @@ fun PrayerRowCreative(
             letterSpacing = 0.5.sp)
     }
 }
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  NAV CARD VERTICAL — palette or brûlé homogène
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 @Composable
 fun NavCardVertical(
@@ -561,10 +562,6 @@ fun NavCardVertical(
     }
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  NAV CARD LANDSCAPE
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
 @Composable
 fun NavCardLandscape(icon: String, titleArabic: String, titleLatin: String, subtitle: String, onClick: () -> Unit) {
     Row(
@@ -590,10 +587,6 @@ fun NavCardLandscape(icon: String, titleArabic: String, titleLatin: String, subt
         Text("›", fontSize = 20.sp, color = QuranColors.GoldDim)
     }
 }
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  GPS DIALOG
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 @Composable
 fun GpsActivationDialog(onOpenGps: () -> Unit, onDismiss: () -> Unit) {
@@ -636,11 +629,6 @@ fun GpsActivationDialog(onOpenGps: () -> Unit, onDismiss: () -> Unit) {
         }
     }
 }
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  DECORATIVE BACKGROUND
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
 @Composable
 fun DecorativeBackground() {
     val inf = rememberInfiniteTransition(label = "bg")
@@ -653,10 +641,6 @@ fun DecorativeBackground() {
         for (r in 1..6) drawCircle(c, r * 80f, Offset(cx, cy), style = Stroke(1f))
     })
 }
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  APP HEADER
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 @Composable
 fun AppHeader() {
@@ -743,7 +727,6 @@ fun PrayerTimesErrorCard(message: String, onRefresh: () -> Unit) {
     }
 }
 
-// ── Legacy ────────────────────────────────────────────────────────────────────
 @Composable
 fun NavCard(modifier: Modifier, icon: String, titleArabic: String,
             titleLatin: String, subtitle: String, onClick: () -> Unit) {

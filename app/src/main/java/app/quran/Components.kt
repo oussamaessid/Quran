@@ -43,7 +43,6 @@ fun Modifier.leftBorder(width: Dp, color: Color) = drawWithContent {
     drawLine(color, Offset(0f, 0f), Offset(0f, size.height), width.toPx())
 }
 
-// ── Arabic numeral helpers ─────────────────────────────────────────────────────
 private val arabicNumerals = charArrayOf('٠','١','٢','٣','٤','٥','٦','٧','٨','٩')
 
 fun Int.toArabicNumeral(): String =
@@ -52,7 +51,6 @@ fun Int.toArabicNumeral(): String =
 fun arabicVerseEndText(verseNumber: Int): String =
     "\u202A\uFD3E${verseNumber.toArabicNumeral()}\uFD3F\u202C"
 
-// ── Page-level word-position map ───────────────────────────────────────────────
 fun buildWordPositionMap(page: QuranPage): Map<Int, Int> {
     val result = HashMap<Int, Int>()
     page.verses.forEach { verse ->
@@ -64,8 +62,6 @@ fun buildWordPositionMap(page: QuranPage): Map<Int, Int> {
     }
     return result
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
 fun LoadingState(message: String = "Loading…", light: Boolean = false) {
@@ -101,7 +97,8 @@ fun ErrorState(message: String, onRetry: () -> Unit) {
             modifier            = Modifier.padding(32.dp)
         ) {
             Text("﴿", fontSize = 40.sp, color = QuranColors.GoldDim)
-            Text(message, color = QuranColors.TextSecondary, fontSize = 13.sp, textAlign = TextAlign.Center)
+            Text(message, color = QuranColors.TextSecondary, fontSize = 13.sp,
+                textAlign = TextAlign.Center)
             Box(
                 Modifier
                     .clip(RoundedCornerShape(8.dp))
@@ -111,7 +108,8 @@ fun ErrorState(message: String, onRetry: () -> Unit) {
                     .padding(horizontal = 22.dp, vertical = 9.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text("Retry", color = QuranColors.GoldBright, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                Text("Retry", color = QuranColors.GoldBright, fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium)
             }
         }
     }
@@ -151,7 +149,9 @@ fun PageIndicatorDots(currentPage: Int, totalPages: Int) {
                 Modifier
                     .size(if (i == currentPage) 6.dp else 4.dp)
                     .clip(CircleShape)
-                    .background(if (i == currentPage) QuranColors.Gold else QuranColors.PanelBorder)
+                    .background(
+                        if (i == currentPage) QuranColors.Gold else QuranColors.PanelBorder
+                    )
             )
         }
         if (end < totalPages) Text("…", fontSize = 8.sp, color = QuranColors.TextMuted)
@@ -222,7 +222,14 @@ fun BismillahLine(
     }
 }
 
-// ── MushafLine ─────────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+// AyahPlayStatus
+// ══════════════════════════════════════════════════════════════════════════════
+enum class AyahPlayStatus { NORMAL, PAST, CURRENT, FUTURE }
+
+// ══════════════════════════════════════════════════════════════════════════════
+// MushafLine
+// ══════════════════════════════════════════════════════════════════════════════
 @Composable
 fun MushafLine(
     wordsInLine    : List<WordInLine>,
@@ -230,7 +237,9 @@ fun MushafLine(
     fontSize       : TextUnit,
     lineHeightDp   : Dp,
     selectedAyahKey: String?,
+    // audioHighlight = Pair(verseKey, wordPosition) of the word being read RIGHT NOW
     audioHighlight : Pair<String, Int>? = null,
+    // audioActive = any audio mode is running (surah-full OR ayah-playlist)
     audioActive    : Boolean            = false,
     centered       : Boolean            = false,
     pageFont       : FontFamily         = QuranFonts.AmiriQuran,
@@ -238,8 +247,11 @@ fun MushafLine(
 ) {
     val sorted = remember(wordsInLine) { wordsInLine.sortedBy { it.word.id } }
 
-    // The verseKey currently being read aloud (null = nothing playing)
-    val currentAudioVerseKey = audioHighlight?.first
+    // The verse currently being read — derived directly from the highlight signal.
+    // This is the single source of truth for PAST/CURRENT/FUTURE coloring.
+    val activeVerseKey: String? = audioHighlight?.first
+
+    val hasSelection = !audioActive && selectedAyahKey != null
 
     SubcomposeLayout(
         modifier = Modifier.fillMaxWidth().height(lineHeightDp)
@@ -252,46 +264,59 @@ fun MushafLine(
             val verseKey = item.verse.verseKey
             val isEnd    = item.word.charTypeName == "end"
 
-            // Selected-ayah highlight (only when audio is NOT active)
+            // Golden tap highlight (only when no audio)
             val isAyah = verseKey == selectedAyahKey && !audioActive
 
-            // The word currently being spoken
+            // The exact word lit by the audio position
             val isAudioWord = !isEnd
                     && audioHighlight != null
-                    && audioHighlight.first  == verseKey
+                    && audioHighlight.first == verseKey
                     && wordPositionMap[item.word.id] == audioHighlight.second
 
-            // Determine the playback status of this ayah's verseKey
-            // compared to the currently playing ayah
+            // ── Compute PAST / CURRENT / FUTURE ──────────────────────────────
             val ayahStatus: AyahPlayStatus = when {
-                !audioActive                        -> AyahPlayStatus.NORMAL
-                currentAudioVerseKey == null        -> AyahPlayStatus.NORMAL
-                verseKey == currentAudioVerseKey    -> AyahPlayStatus.CURRENT
-                else -> {
-                    // Compare by surah then verse number to decide past vs future
-                    val currentSurah = currentAudioVerseKey.substringBefore(":").toIntOrNull() ?: 0
-                    val currentVerse = currentAudioVerseKey.substringAfter(":").toIntOrNull() ?: 0
-                    val thisSurah    = verseKey.substringBefore(":").toIntOrNull() ?: 0
-                    val thisVerse    = verseKey.substringAfter(":").toIntOrNull() ?: 0
 
-                    val isBefore = (thisSurah < currentSurah) ||
-                            (thisSurah == currentSurah && thisVerse < currentVerse)
-                    if (isBefore) AyahPlayStatus.PAST else AyahPlayStatus.FUTURE
+                audioActive -> {
+                    when {
+                        // No word highlighted yet (loading / between ayahs)
+                        activeVerseKey == null -> AyahPlayStatus.NORMAL
+
+                        verseKey == activeVerseKey -> AyahPlayStatus.CURRENT
+
+                        else -> {
+                            // Compare surah:ayah numerically
+                            val aSurah = activeVerseKey.substringBefore(":").toIntOrNull() ?: 0
+                            val aAyah  = activeVerseKey.substringAfter(":").toIntOrNull()  ?: 0
+                            val tSurah = verseKey.substringBefore(":").toIntOrNull() ?: 0
+                            val tAyah  = verseKey.substringAfter(":").toIntOrNull()  ?: 0
+                            val before = tSurah < aSurah ||
+                                    (tSurah == aSurah && tAyah < aAyah)
+                            if (before) AyahPlayStatus.PAST else AyahPlayStatus.FUTURE
+                        }
+                    }
                 }
+
+                // Tap selection (no audio active)
+                hasSelection -> when {
+                    verseKey == selectedAyahKey -> AyahPlayStatus.CURRENT
+                    else                        -> AyahPlayStatus.PAST
+                }
+
+                else -> AyahPlayStatus.NORMAL
             }
 
             subcompose("w_$i") {
                 WordChip(
-                    word        = item.word,
-                    verseNumber = item.verse.verseNumber,
-                    fontSize    = fontSize,
-                    endFontSize = fontSize,
+                    word         = item.word,
+                    verseNumber  = item.verse.verseNumber,
+                    fontSize     = fontSize,
+                    endFontSize  = fontSize,
                     lineHeightPx = availH,
-                    isAyah      = isAyah,
-                    isAudioWord = isAudioWord,
-                    ayahStatus  = ayahStatus,
-                    pageFont    = pageFont,
-                    onClick     = { onAyahSelected(verseKey) }
+                    isAyah       = isAyah,
+                    isAudioWord  = isAudioWord,
+                    ayahStatus   = ayahStatus,
+                    pageFont     = pageFont,
+                    onClick      = { onAyahSelected(verseKey) }
                 )
             }.first().measure(
                 constraints.copy(minWidth = 0, minHeight = availH, maxHeight = availH)
@@ -323,13 +348,9 @@ fun MushafLine(
     }
 }
 
-enum class AyahPlayStatus {
-    NORMAL,
-    PAST,
-    CURRENT,
-    FUTURE
-}
-
+// ══════════════════════════════════════════════════════════════════════════════
+// WordChip
+// ══════════════════════════════════════════════════════════════════════════════
 @Composable
 fun WordChip(
     word        : Word,
@@ -352,6 +373,8 @@ fun WordChip(
         isEnd                                -> QuranColors.VerseEndColor
         isAyah                               -> QuranColors.Gold.copy(alpha = 0.75f)
         ayahStatus == AyahPlayStatus.CURRENT -> QuranColors.ArabicText.copy(alpha = 0.22f)
+        ayahStatus == AyahPlayStatus.PAST    -> QuranColors.ArabicText.copy(alpha = 0.75f)
+        ayahStatus == AyahPlayStatus.FUTURE  -> QuranColors.ArabicText.copy(alpha = 0.18f)
         else                                 -> QuranColors.ArabicText
     }
 

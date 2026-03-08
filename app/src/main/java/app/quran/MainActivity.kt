@@ -21,8 +21,10 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.quran.viewmodel.QuranViewModel
+import app.quran.viewmodel.SalatViewModel
 
-enum class AppScreen { HOME, QURAN, QIBLA, TASBIH, ADHKAR }
+// ── Écrans de l'app ───────────────────────────────────────────────────────────
+enum class AppScreen { HOME, QURAN, QIBLA, TASBIH, ADHKAR, SALAT }
 
 class MainActivity : ComponentActivity() {
 
@@ -33,7 +35,8 @@ class MainActivity : ComponentActivity() {
             .isAppearanceLightStatusBars = false
 
         setContent {
-            val quranVm: QuranViewModel = viewModel()
+            val quranVm : QuranViewModel = viewModel()
+            val salatVm : SalatViewModel = viewModel()   // ← ViewModel Salat partagé
             var currentScreen by remember { mutableStateOf(AppScreen.HOME) }
 
             fun hasPermission() = ContextCompat.checkSelfPermission(
@@ -78,8 +81,9 @@ class MainActivity : ComponentActivity() {
                     .navigationBarsPadding()
             ) {
                 AnimatedContent(
-                    targetState   = currentScreen,
-                    transitionSpec = { fadeIn() togetherWith fadeOut() }
+                    targetState    = currentScreen,
+                    transitionSpec = { fadeIn() togetherWith fadeOut() },
+                    label          = "screen",
                 ) { screen ->
                     when (screen) {
                         AppScreen.HOME -> HomeScreen(
@@ -94,7 +98,8 @@ class MainActivity : ComponentActivity() {
                             onOpenQuran  = { currentScreen = AppScreen.QURAN },
                             onOpenQibla  = { currentScreen = AppScreen.QIBLA },
                             onOpenTasbih = { currentScreen = AppScreen.TASBIH },
-                            onOpenAdhkar = { currentScreen = AppScreen.ADHKAR }
+                            onOpenAdhkar = { currentScreen = AppScreen.ADHKAR },
+                            onOpenSalat  = { currentScreen = AppScreen.SALAT },
                         )
                         AppScreen.QURAN -> QuranScreen(
                             vm     = quranVm,
@@ -107,6 +112,10 @@ class MainActivity : ComponentActivity() {
                             onBack = { currentScreen = AppScreen.HOME }
                         )
                         AppScreen.ADHKAR -> AdhkarScreen(
+                            onBack = { currentScreen = AppScreen.HOME }
+                        )
+                        AppScreen.SALAT -> SalatScreen(
+                            vm     = salatVm,
                             onBack = { currentScreen = AppScreen.HOME }
                         )
                     }

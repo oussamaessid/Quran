@@ -110,13 +110,15 @@ fun QuranScreen(
     var showSurahPicker by remember { mutableStateOf(false) }
     var showSaved by remember { mutableStateOf(false) }
 
-    val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_STOP) vm.stopAudio()
+    // ── FIX : onDispose = quitter l'écran, ON_STOP = app en arrière-plan ──────
+    // onDispose se déclenche quand le Composable quitte la composition (navigation back)
+    // ON_STOP se déclenche quand l'app passe en arrière-plan — on NE stop PAS l'audio ici
+    // car on veut qu'il continue en background via le ForegroundService.
+    DisposableEffect(Unit) {
+        onDispose {
+            // L'écran Quran est quitté → arrêter l'audio et le service
+            vm.stopAudio()
         }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     BackHandler {
@@ -154,9 +156,8 @@ fun QuranScreen(
                 Column(Modifier.fillMaxSize()) {
                     AnimatedContent(
                         targetState = topBarState, transitionSpec = {
-                            slideInVertically { -it } + fadeIn(tween(220)) togetherWith slideOutVertically { -it } + fadeOut(
-                                tween(180)
-                            )
+                            slideInVertically { -it } + fadeIn(tween(220)) togetherWith
+                                    slideOutVertically { -it } + fadeOut(tween(180))
                         }, label = "topBarSwitch"
                     ) { state ->
                         when (state) {
@@ -215,7 +216,10 @@ fun QuranScreen(
         SurahPickerSheet(
             chapters = chapters,
             activeSurahId = currentSurahId,
-            onSelect = { surahId -> vm.playSurahAndNavigate(surahId); showSurahPicker = false },
+            onSelect = { surahId ->
+                vm.playSurahAndNavigate(surahId)
+                showSurahPicker = false
+            },
             onDismiss = { showSurahPicker = false })
     }
 
@@ -329,12 +333,7 @@ fun AyahAudioTopBar(
                         .clickable { vm.seekAudio((info.positionMs - 5_000).coerceAtLeast(0)) },
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        "-5",
-                        fontSize = 8.sp,
-                        color = QuranColors.GoldDim,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Text("-5", fontSize = 8.sp, color = QuranColors.GoldDim, fontWeight = FontWeight.Bold)
                 }
 
                 Box(
@@ -342,11 +341,7 @@ fun AyahAudioTopBar(
                         .size(btnSize)
                         .clip(CircleShape)
                         .background(
-                            Brush.radialGradient(
-                                listOf(
-                                    QuranColors.GoldWarm, QuranColors.GoldSubtle
-                                )
-                            )
+                            Brush.radialGradient(listOf(QuranColors.GoldWarm, QuranColors.GoldSubtle))
                         )
                         .border(1.dp, QuranColors.Gold, CircleShape)
                         .clickable { if (!isLoading) vm.togglePlayPause() },
@@ -354,16 +349,11 @@ fun AyahAudioTopBar(
                 ) {
                     if (isLoading) {
                         CircularProgressIndicator(
-                            color = QuranColors.AppBg,
-                            strokeWidth = 2.dp,
+                            color = QuranColors.AppBg, strokeWidth = 2.dp,
                             modifier = Modifier.size(18.dp)
                         )
                     } else {
-                        Text(
-                            if (isPlaying) "||" else ">",
-                            fontSize = 14.sp,
-                            color = QuranColors.AppBg
-                        )
+                        Text(if (isPlaying) "||" else ">", fontSize = 14.sp, color = QuranColors.AppBg)
                     }
                 }
 
@@ -396,11 +386,7 @@ fun AyahAudioTopBar(
                         .fillMaxHeight()
                         .fillMaxWidth(info.progress)
                         .background(
-                            Brush.horizontalGradient(
-                                listOf(
-                                    QuranColors.GoldDim, QuranColors.GoldBlaze
-                                )
-                            )
+                            Brush.horizontalGradient(listOf(QuranColors.GoldDim, QuranColors.GoldBlaze))
                         )
                 )
             }
@@ -477,24 +463,18 @@ fun SurahAudioTopBar(
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Text(
-                            chapter.nameSimple,
-                            fontSize = 12.sp,
-                            color = QuranColors.GoldBright,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1
+                            chapter.nameSimple, fontSize = 12.sp,
+                            color = QuranColors.GoldBright, fontWeight = FontWeight.Bold, maxLines = 1
                         )
                         Text(
-                            chapter.nameArabic,
-                            fontSize = 14.sp,
+                            chapter.nameArabic, fontSize = 14.sp,
                             color = QuranColors.GoldBlaze,
                             style = TextStyle(textDirection = TextDirection.Rtl)
                         )
                     }
                     Text(
                         "Mishary Al-Afasy - ${chapter.versesCount} ayat",
-                        fontSize = 8.sp,
-                        color = QuranColors.TextMuted,
-                        fontStyle = FontStyle.Italic
+                        fontSize = 8.sp, color = QuranColors.TextMuted, fontStyle = FontStyle.Italic
                     )
                 }
             }
@@ -512,12 +492,7 @@ fun SurahAudioTopBar(
                         .clickable { vm.seekAudio((info.positionMs - 30_000).coerceAtLeast(0)) },
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        "-30",
-                        fontSize = 7.sp,
-                        color = QuranColors.GoldDim,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Text("-30", fontSize = 7.sp, color = QuranColors.GoldDim, fontWeight = FontWeight.Bold)
                 }
 
                 Box(
@@ -525,11 +500,7 @@ fun SurahAudioTopBar(
                         .size(btnSize)
                         .clip(CircleShape)
                         .background(
-                            Brush.radialGradient(
-                                listOf(
-                                    QuranColors.GoldWarm, QuranColors.GoldSubtle
-                                )
-                            )
+                            Brush.radialGradient(listOf(QuranColors.GoldWarm, QuranColors.GoldSubtle))
                         )
                         .border(1.dp, QuranColors.Gold, CircleShape)
                         .clickable { if (!isLoading) vm.togglePlayPause() },
@@ -537,16 +508,11 @@ fun SurahAudioTopBar(
                 ) {
                     if (isLoading) {
                         CircularProgressIndicator(
-                            color = QuranColors.AppBg,
-                            strokeWidth = 2.dp,
+                            color = QuranColors.AppBg, strokeWidth = 2.dp,
                             modifier = Modifier.size(18.dp)
                         )
                     } else {
-                        Text(
-                            if (isPlaying) "||" else ">",
-                            fontSize = 14.sp,
-                            color = QuranColors.AppBg
-                        )
+                        Text(if (isPlaying) "||" else ">", fontSize = 14.sp, color = QuranColors.AppBg)
                     }
                 }
 
@@ -579,11 +545,7 @@ fun SurahAudioTopBar(
                         .fillMaxHeight()
                         .fillMaxWidth(info.progress)
                         .background(
-                            Brush.horizontalGradient(
-                                listOf(
-                                    QuranColors.GoldDim, QuranColors.GoldBlaze
-                                )
-                            )
+                            Brush.horizontalGradient(listOf(QuranColors.GoldDim, QuranColors.GoldBlaze))
                         )
                 )
             }
@@ -620,42 +582,50 @@ fun MushafPager(
     onRetry: (Int) -> Unit
 ) {
     val screenH = LocalConfiguration.current.screenHeightDp.dp
-    // Remove horizontal padding entirely so pages fill edge-to-edge
-    // → no "two half-pages with borders" visible during any transition
     val pagePadV = screenH * 0.005f
 
     val total = QuranViewModel.TOTAL_PAGES
-    val pagerState = rememberPagerState(initialPage = total - 1) { total }
+    val pagerState = rememberPagerState(initialPage = total - pageNumber) { total }
     val scope = rememberCoroutineScope()
 
+    // ── Fonctions locales définies EN PREMIER ─────────────────────────────────
     fun indexToPage(idx: Int) = total - idx
     fun pageToIndex(page: Int) = total - page
 
+    // ── Réaction au changement de page du pager ───────────────────────────────
     LaunchedEffect(pagerState.currentPage) {
         onPageChanged(indexToPage(pagerState.currentPage) - 1)
     }
 
-    // ── KEY FIX: use scrollToPage (instant, no animation) for programmatic ──
-    // navigation so we never render two pages side-by-side during the jump.
+    // ── Navigation programmatique (instant, sans animation) ──────────────────
     LaunchedEffect(navigateToPage) {
         val target = navigateToPage ?: return@LaunchedEffect
         pagerState.scrollToPage(pageToIndex(target + 1))
         onNavigationConsumed()
     }
 
+    // ── Auto-turn page quand l'audio franchit une frontière de page ───────────
+    val autoTurnPage by vm.autoTurnPageSignal.collectAsStateWithLifecycle()
+    LaunchedEffect(autoTurnPage) {
+        val target = autoTurnPage ?: return@LaunchedEffect
+        scope.launch { pagerState.animateScrollToPage(pageToIndex(target + 1)) }
+        vm.onAutoTurnConsumed()
+    }
+
     Box(modifier) {
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.fillMaxSize(),
-            beyondViewportPageCount = 1,   // reduced from 2 – less memory, same UX
-            key = { it }) { pagerIndex ->
+            beyondViewportPageCount = 1,
+            key = { it }
+        ) { pagerIndex ->
             val pageNum = indexToPage(pagerIndex)
             val pageState = pages[pageNum]
 
             Box(
                 Modifier
                     .fillMaxSize()
-                    .padding(vertical = pagePadV),   // horizontal padding removed
+                    .padding(vertical = pagePadV),
                 contentAlignment = Alignment.Center
             ) {
                 Box(
@@ -667,13 +637,8 @@ fun MushafPager(
                         .border(1.dp, QuranColors.PageBorder, RoundedCornerShape(4.dp))
                 ) {
                     when (pageState) {
-                        null, is UiState.Loading -> LoadingState(
-                            "Loading page $pageNum...",
-                            light = true
-                        )
-
+                        null, is UiState.Loading -> LoadingState("Loading page $pageNum...", light = true)
                         is UiState.Error -> ErrorState(pageState.message) { onRetry(pageNum) }
-
                         is UiState.Success -> if (pageNum == 605 || pageNum == 606) {
                             val screenH = LocalConfiguration.current.screenHeightDp.dp
                             DuaKhatmPageContent(
@@ -683,19 +648,19 @@ fun MushafPager(
                             )
                         } else {
                             MushafPageContent(
-                                quranPage = pageState.data,
-                                chapters = chapters,
-                                showTranslation = showTranslation,
-                                selectedAyahKey = selectedAyahKey,
-                                audioHighlight = audioHighlight,
-                                showAudioSheet = showAudioSheet,
-                                audioChoiceMade = audioChoiceMade,
+                                quranPage         = pageState.data,
+                                chapters          = chapters,
+                                showTranslation   = showTranslation,
+                                selectedAyahKey   = selectedAyahKey,
+                                audioHighlight    = audioHighlight,
+                                showAudioSheet    = showAudioSheet,
+                                audioChoiceMade   = audioChoiceMade,
                                 showSurahAudioBar = showSurahAudioBar,
-                                pageNumber = pageNumber,
-                                surahName = surahName,
-                                vm = vm,
-                                onAyahSelected = onAyahSelected,
-                                onDismissAudio = onDismissAudio
+                                pageNumber        = pageNumber,
+                                surahName         = surahName,
+                                vm                = vm,
+                                onAyahSelected    = onAyahSelected,
+                                onDismissAudio    = onDismissAudio
                             )
                         }
                     }
@@ -705,13 +670,14 @@ fun MushafPager(
 
         if (showIndex) {
             SurahIndexSheet(
-                chapters = chapters,
-                currentIndex = indexToPage(pagerState.currentPage) - 1,
-                onDismiss = onDismissIndex,
+                chapters      = chapters,
+                currentIndex  = indexToPage(pagerState.currentPage) - 1,
+                onDismiss     = onDismissIndex,
                 onSelectSurah = { firstPage ->
                     onDismissIndex()
                     scope.launch { pagerState.scrollToPage(pageToIndex(firstPage)) }
-                })
+                }
+            )
         }
     }
 }
@@ -770,8 +736,7 @@ fun MushafPageContent(
         quranPage.verses.associate { verse ->
             val sid = verse.verseKey.substringBefore(":").toIntOrNull() ?: 0
             (sid to verse.verseNumber) to (verse.translations?.firstOrNull()?.text?.replace(
-                Regex("<[^>]*>"),
-                ""
+                Regex("<[^>]*>"), ""
             ) ?: "")
         }
     }
@@ -794,7 +759,6 @@ fun MushafPageContent(
         val bottomStripH = maxHeight * 0.016f
 
         if (!isCenteredPage) {
-
             val extraPadH = maxWidth * 0.016f
             val flowFontSp = (maxWidth.value * 0.05f).sp
 
@@ -804,7 +768,6 @@ fun MushafPageContent(
                     .padding(horizontal = padH, vertical = padV)
             ) {
                 PageTopStrip(quranPage, topStripH)
-
                 Box(
                     Modifier
                         .weight(1f)
@@ -824,7 +787,6 @@ fun MushafPageContent(
                         modifier = Modifier.fillMaxSize()
                     )
                 }
-
                 PageBottomStrip(quranPage, bottomStripH)
             }
 
@@ -856,8 +818,7 @@ fun MushafPageContent(
         val fontSize = (maxWidthValue * 0.052f).sp
         val numLines = lineMap.size.coerceAtLeast(1)
         val nHeaders = surahStartAtLine.size
-        val nBismillah =
-            surahStartAtLine.values.count { it.bismillahPre && it.id != 9 && it.id != 1 }
+        val nBismillah = surahStartAtLine.values.count { it.bismillahPre && it.id != 9 && it.id != 1 }
         val nEnds = if (showTranslation) allWords.count { it.word.charTypeName == "end" } else 0
         val nElements = numLines + nHeaders + nBismillah + nEnds
         val nGaps = (nElements - 1).coerceAtLeast(0)
@@ -890,30 +851,21 @@ fun MushafPageContent(
 
                 surahStartAtLine[lineNum]?.let { chapter ->
                     if (!isFirstElement) Spacer(
-                        Modifier.height(
-                            if (quranPage.pageNumber >= 601) 2.dp else gapH
-                        )
+                        Modifier.height(if (quranPage.pageNumber >= 601) 2.dp else gapH)
                     )
                     isFirstElement = false
 
                     Box(
-                        Modifier
-                            .fillMaxWidth()
-                            .height(hdrH), contentAlignment = Alignment.Center
+                        Modifier.fillMaxWidth().height(hdrH),
+                        contentAlignment = Alignment.Center
                     ) {
                         SurahHeaderBanner(nameArabic = chapter.nameArabic)
                     }
 
                     if (chapter.bismillahPre && chapter.id != 9 && chapter.id != 1) {
-                        Spacer(
-                            Modifier.height(
-                                if (quranPage.pageNumber >= 601) 1.dp else gapH * 0.01f
-                            )
-                        )
+                        Spacer(Modifier.height(if (quranPage.pageNumber >= 601) 1.dp else gapH * 0.01f))
                         Box(
-                            Modifier
-                                .fillMaxWidth()
-                                .height(bismiH),
+                            Modifier.fillMaxWidth().height(bismiH),
                             contentAlignment = Alignment.Center
                         ) {
                             BismillahLine(fontSize = fontSize)
@@ -922,9 +874,7 @@ fun MushafPageContent(
                 }
 
                 if (!isFirstElement) Spacer(
-                    Modifier.height(
-                        if (quranPage.pageNumber >= 601) 2.dp else gapH
-                    )
+                    Modifier.height(if (quranPage.pageNumber >= 601) 2.dp else gapH)
                 )
 
                 Box(
@@ -937,15 +887,15 @@ fun MushafPageContent(
                                 .forEach { key -> lineYPositionsPx[key] = yPx }
                         }) {
                     MushafLine(
-                        wordsInLine = wordsInLine,
+                        wordsInLine     = wordsInLine,
                         wordPositionMap = wordPositionMap,
-                        fontSize = fontSize,
-                        lineHeightDp = lineH,
+                        fontSize        = fontSize,
+                        lineHeightDp    = lineH,
                         selectedAyahKey = selectedAyahKey,
-                        audioHighlight = audioHighlight,
-                        audioActive = audioActive,
-                        centered = true,
-                        onAyahSelected = onAyahSelected
+                        audioHighlight  = audioHighlight,
+                        audioActive     = audioActive,
+                        centered        = true,
+                        onAyahSelected  = onAyahSelected
                     )
                 }
 
@@ -1004,31 +954,16 @@ fun MushafPageContent(
 
 @Composable
 fun PageTopStrip(quranPage: QuranPage, height: Dp) {
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .height(height)
-    ) {
+    Column(Modifier.fillMaxWidth().height(height)) {
         Row(
-            Modifier
-                .fillMaxWidth()
-                .weight(1f),
+            Modifier.fillMaxWidth().weight(1f),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                "Juz ${quranPage.juzNumber}",
-                fontSize = 12.sp,
-                color = QuranColors.GoldDim,
-                style = TextStyle(textDirection = TextDirection.Rtl)
-            )
-            Text(
-                "Hizb ${quranPage.hizbNumber}",
-                fontSize = 12.sp,
-                color = QuranColors.GoldDim,
-                fontWeight = FontWeight.SemiBold,
-                style = TextStyle(textDirection = TextDirection.Rtl)
-            )
+            Text("Juz ${quranPage.juzNumber}", fontSize = 12.sp, color = QuranColors.GoldDim,
+                style = TextStyle(textDirection = TextDirection.Rtl))
+            Text("Hizb ${quranPage.hizbNumber}", fontSize = 12.sp, color = QuranColors.GoldDim,
+                fontWeight = FontWeight.SemiBold, style = TextStyle(textDirection = TextDirection.Rtl))
         }
         HorizontalDivider(color = QuranColors.BismillahLine, thickness = 0.5.dp)
     }
@@ -1036,25 +971,11 @@ fun PageTopStrip(quranPage: QuranPage, height: Dp) {
 
 @Composable
 fun PageBottomStrip(quranPage: QuranPage, height: Dp) {
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .height(height)
-    ) {
-        HorizontalDivider(
-            color = QuranColors.BismillahLine.copy(alpha = 0.5f), thickness = 0.5.dp
-        )
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .weight(1f), contentAlignment = Alignment.Center
-        ) {
-            Text(
-                quranPage.pageNumber.toString(),
-                fontSize = 10.sp,
-                color = QuranColors.GoldDim,
-                fontWeight = FontWeight.Medium
-            )
+    Column(Modifier.fillMaxWidth().height(height)) {
+        HorizontalDivider(color = QuranColors.BismillahLine.copy(alpha = 0.5f), thickness = 0.5.dp)
+        Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+            Text(quranPage.pageNumber.toString(), fontSize = 10.sp,
+                color = QuranColors.GoldDim, fontWeight = FontWeight.Medium)
         }
     }
 }
@@ -1068,52 +989,37 @@ fun SurahIndexSheet(
     val filtered = remember(search, chapters) {
         if (search.isBlank()) chapters
         else chapters.filter {
-            it.nameSimple.contains(search, ignoreCase = true) || it.translatedName.name.contains(
-                search,
-                ignoreCase = true
-            ) || it.id.toString() == search.trim()
+            it.nameSimple.contains(search, ignoreCase = true) ||
+                    it.translatedName.name.contains(search, ignoreCase = true) ||
+                    it.id.toString() == search.trim()
         }
     }
 
     ModalBottomSheet(
-        onDismissRequest = onDismiss, containerColor = QuranColors.Panel, dragHandle = {
+        onDismissRequest = onDismiss,
+        containerColor = QuranColors.Panel,
+        dragHandle = {
             Box(
-                Modifier
-                    .padding(vertical = 9.dp)
-                    .width(38.dp)
-                    .height(4.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(QuranColors.PanelBorder)
+                Modifier.padding(vertical = 9.dp).width(38.dp).height(4.dp)
+                    .clip(RoundedCornerShape(2.dp)).background(QuranColors.PanelBorder)
             )
         }) {
         Column(Modifier.fillMaxWidth()) {
             Row(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 18.dp, vertical = 7.dp),
+                Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 7.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    "114 Surahs",
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = QuranColors.GoldBright
-                )
-                Text(
-                    "القرآن الكريم",
-                    fontSize = 17.sp,
-                    color = QuranColors.GoldDim,
-                    style = TextStyle(textDirection = TextDirection.Rtl)
-                )
+                Text("114 Surahs", fontSize = 17.sp, fontWeight = FontWeight.SemiBold,
+                    color = QuranColors.GoldBright)
+                Text("القرآن الكريم", fontSize = 17.sp, color = QuranColors.GoldDim,
+                    style = TextStyle(textDirection = TextDirection.Rtl))
             }
             OutlinedTextField(
                 value = search,
                 onValueChange = { search = it },
                 singleLine = true,
-                placeholder = {
-                    Text("Search surah...", color = QuranColors.TextMuted, fontSize = 13.sp)
-                },
+                placeholder = { Text("Search surah...", color = QuranColors.TextMuted, fontSize = 13.sp) },
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = QuranColors.GoldDim,
                     unfocusedBorderColor = QuranColors.PanelBorder,
@@ -1121,9 +1027,7 @@ fun SurahIndexSheet(
                     unfocusedTextColor = QuranColors.TextPrimary,
                     cursorColor = QuranColors.Gold
                 ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 7.dp)
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 7.dp)
             )
             LazyColumn(contentPadding = PaddingValues(bottom = 36.dp)) {
                 items(filtered, key = { it.id }) { chapter ->
@@ -1132,75 +1036,51 @@ fun SurahIndexSheet(
                     Row(
                         Modifier
                             .fillMaxWidth()
-                            .background(
-                                if (isActive) QuranColors.GoldSubtle else Color.Transparent
-                            )
+                            .background(if (isActive) QuranColors.GoldSubtle else Color.Transparent)
                             .clickable { onSelectSurah(firstPage) }
                             .padding(horizontal = 18.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
                         Box(
                             Modifier
                                 .size(30.dp)
                                 .clip(RoundedCornerShape(7.dp))
-                                .background(
-                                    if (isActive) QuranColors.GoldSubtle else QuranColors.AppBg
-                                )
+                                .background(if (isActive) QuranColors.GoldSubtle else QuranColors.AppBg)
                                 .border(
                                     1.dp,
                                     if (isActive) QuranColors.GoldDim else QuranColors.PanelBorder,
                                     RoundedCornerShape(7.dp)
-                                ), contentAlignment = Alignment.Center
+                                ),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                chapter.id.toString(),
-                                fontSize = 11.sp,
+                            Text(chapter.id.toString(), fontSize = 11.sp,
                                 color = if (isActive) QuranColors.GoldBright else QuranColors.TextMuted,
-                                fontWeight = FontWeight.Medium
-                            )
+                                fontWeight = FontWeight.Medium)
                         }
                         Column(Modifier.weight(1f)) {
-                            Text(
-                                chapter.nameSimple,
-                                fontSize = 13.sp,
+                            Text(chapter.nameSimple, fontSize = 13.sp,
                                 color = if (isActive) QuranColors.GoldBright else QuranColors.TextPrimary,
-                                fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Normal
-                            )
+                                fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Normal)
                             Row(
                                 horizontalArrangement = Arrangement.spacedBy(5.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(
-                                    chapter.translatedName.name,
-                                    fontSize = 10.sp,
-                                    color = QuranColors.TextMuted,
-                                    fontStyle = FontStyle.Italic
-                                )
+                                Text(chapter.translatedName.name, fontSize = 10.sp,
+                                    color = QuranColors.TextMuted, fontStyle = FontStyle.Italic)
                                 Text(".", fontSize = 10.sp, color = QuranColors.TextMuted)
-                                Text(
-                                    "p.$firstPage", fontSize = 10.sp, color = QuranColors.TextMuted
-                                )
+                                Text("p.$firstPage", fontSize = 10.sp, color = QuranColors.TextMuted)
                                 Text(".", fontSize = 10.sp, color = QuranColors.TextMuted)
-                                Text(
-                                    "${chapter.versesCount}v",
-                                    fontSize = 10.sp,
-                                    color = QuranColors.TextMuted
-                                )
+                                Text("${chapter.versesCount}v", fontSize = 10.sp, color = QuranColors.TextMuted)
                                 RevelationPill(chapter.revelationPlace)
                             }
                         }
-                        Text(
-                            chapter.nameArabic,
-                            fontSize = 16.sp,
+                        Text(chapter.nameArabic, fontSize = 16.sp,
                             color = if (isActive) QuranColors.Gold else QuranColors.GoldDim,
-                            style = TextStyle(textDirection = TextDirection.Rtl)
-                        )
+                            style = TextStyle(textDirection = TextDirection.Rtl))
                     }
-                    HorizontalDivider(
-                        color = QuranColors.PanelBorder,
-                        thickness = 0.5.dp,
-                        modifier = Modifier.padding(horizontal = 18.dp)
-                    )
+                    HorizontalDivider(color = QuranColors.PanelBorder, thickness = 0.5.dp,
+                        modifier = Modifier.padding(horizontal = 18.dp))
                 }
             }
         }

@@ -22,6 +22,9 @@ class QuranAudioPlayer {
     private var tickJob     : Job?         = null
     private var currentUrl  : String       = ""
 
+    /** Called when a track finishes naturally — set by ViewModel. */
+    var onCompletion: (() -> Unit)? = null
+
     private val _playbackInfo = MutableStateFlow(AudioPlaybackInfo())
     val playbackInfo: StateFlow<AudioPlaybackInfo> = _playbackInfo.asStateFlow()
 
@@ -55,8 +58,10 @@ class QuranAudioPlayer {
                     mp.setOnCompletionListener {
                         stopTick()
                         emit(AudioPlayerState.STOPPED, dur, dur)
+                        onCompletion?.invoke()   // ← notifie le ViewModel
                     }
 
+                    if (startMs > 0) mp.seekTo(startMs.toInt())
                     mp.start()
                     startTick()
                     emit(AudioPlayerState.PLAYING, mp.currentPosition.toLong(), dur)

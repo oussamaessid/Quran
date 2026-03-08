@@ -70,7 +70,7 @@ fun DuaKhatmPageContent(pageNumber: Int, topStripH: Dp, bottomStripH: Dp) {
     val screenW = config.screenWidthDp   // largeur en dp
     val screenH = config.screenHeightDp  // hauteur en dp
 
-    val fontSize = (screenW * 0.050f).coerceIn(13f, 20f).sp
+    val fontSize = (screenW * 0.046f).coerceIn(13f, 20f).sp
 
     val lineHeightMultiplier = 2.30f
     val lineHeightVal = (screenW * 0.044f * lineHeightMultiplier).coerceIn(28f, 44f)
