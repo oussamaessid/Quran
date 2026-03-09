@@ -49,7 +49,7 @@ fun HomeScreen(
     onOpenQibla        : () -> Unit,
     onOpenTasbih       : () -> Unit,
     onOpenAdhkar       : () -> Unit,
-    onOpenSalat        : () -> Unit,          // ← NOUVEAU
+    onOpenSalat        : () -> Unit,
 ) {
     val state         by prayerVm.state.collectAsStateWithLifecycle()
     val context       = LocalContext.current
@@ -127,7 +127,7 @@ fun HomeScreen(
                     is UiState.Success -> PrayerTimesCard(s.data)
                 }
 
-                Spacer(Modifier.height(28.dp))
+                Spacer(Modifier.height(12.dp))
 
                 Row(
                     Modifier.fillMaxWidth(),
@@ -192,7 +192,6 @@ fun HomeScreen(
                         gradientEnd   = Color(0xFF1A0C00),
                         onClick       = onOpenAdhkar
                     )
-                    // ── NOUVELLE CARTE SALAT ──────────────────────────────────
                     NavCardVertical(
                         icon          = "🕌",
                         titleArabic   = "الصلاة",
@@ -214,7 +213,7 @@ fun HomeScreen(
 //                    style = TextStyle(textDirection = TextDirection.Rtl),
 //                    textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()
 //                )
-//                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(24.dp))
             }
         }
     }

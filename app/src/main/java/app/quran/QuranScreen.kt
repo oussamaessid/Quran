@@ -66,6 +66,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -109,11 +110,15 @@ fun QuranScreen(
     var showIndex by remember { mutableStateOf(false) }
     var showSurahPicker by remember { mutableStateOf(false) }
     var showSaved by remember { mutableStateOf(false) }
+    val view = LocalView.current
+    val audioIsActive = showSurahAudioBar || (showAudioSheet && audioChoiceMade)
 
-    // ── FIX : onDispose = quitter l'écran, ON_STOP = app en arrière-plan ──────
-    // onDispose se déclenche quand le Composable quitte la composition (navigation back)
-    // ON_STOP se déclenche quand l'app passe en arrière-plan — on NE stop PAS l'audio ici
-    // car on veut qu'il continue en background via le ForegroundService.
+    LaunchedEffect(audioIsActive) {
+        view.keepScreenOn = audioIsActive
+    }
+    DisposableEffect(Unit) {
+        onDispose { view.keepScreenOn = false }
+    }
     DisposableEffect(Unit) {
         onDispose {
             // L'écran Quran est quitté → arrêter l'audio et le service
@@ -588,23 +593,19 @@ fun MushafPager(
     val pagerState = rememberPagerState(initialPage = total - pageNumber) { total }
     val scope = rememberCoroutineScope()
 
-    // ── Fonctions locales définies EN PREMIER ─────────────────────────────────
     fun indexToPage(idx: Int) = total - idx
     fun pageToIndex(page: Int) = total - page
 
-    // ── Réaction au changement de page du pager ───────────────────────────────
     LaunchedEffect(pagerState.currentPage) {
         onPageChanged(indexToPage(pagerState.currentPage) - 1)
     }
 
-    // ── Navigation programmatique (instant, sans animation) ──────────────────
     LaunchedEffect(navigateToPage) {
         val target = navigateToPage ?: return@LaunchedEffect
         pagerState.scrollToPage(pageToIndex(target + 1))
         onNavigationConsumed()
     }
 
-    // ── Auto-turn page quand l'audio franchit une frontière de page ───────────
     val autoTurnPage by vm.autoTurnPageSignal.collectAsStateWithLifecycle()
     LaunchedEffect(autoTurnPage) {
         val target = autoTurnPage ?: return@LaunchedEffect
@@ -703,6 +704,7 @@ fun MushafPageContent(
     val isShortPage = quranPage.pageNumber <= 2
     val audioActive = audioChoiceMade || showSurahAudioBar
     val density = LocalDensity.current
+    val isAyahPlusMode by vm.isAyahPlusMode.collectAsStateWithLifecycle()
 
     val allWords = remember(quranPage) {
         quranPage.verses.flatMap { verse ->
@@ -894,6 +896,7 @@ fun MushafPageContent(
                         selectedAyahKey = selectedAyahKey,
                         audioHighlight  = audioHighlight,
                         audioActive     = audioActive,
+                        surahColoringEnabled = showSurahAudioBar || (audioActive && !isAyahPlusMode),
                         centered        = true,
                         onAyahSelected  = onAyahSelected
                     )

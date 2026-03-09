@@ -18,6 +18,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -38,7 +39,13 @@ fun SalatScreen(
 ) {
     val s by vm.state.collectAsStateWithLifecycle()
     DisposableEffect(Unit) { onDispose { vm.pauseSession() } }
-
+    val view = LocalView.current
+    LaunchedEffect(s.isActive) {
+        view.keepScreenOn = s.isActive
+    }
+    DisposableEffect(Unit) {
+        onDispose { view.keepScreenOn = false }
+    }
     val targetRakaat = s.selectedPrayer.rakaat
     val progress     = (s.rakaat.toFloat() / targetRakaat).coerceIn(0f, 1f)
     val animProgress by animateFloatAsState(progress, tween(600), label = "prog")
@@ -194,10 +201,6 @@ fun SalatScreen(
     }
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  Jauge lumière
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
 @Composable
 fun SalatLightMeter(
     lux       : Float,
@@ -315,10 +318,6 @@ fun SalatLightMeter(
     }
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  Sélecteur prière
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
 @Composable
 fun SalatPrayerSelector(selected: PrayerConfig, onSelect: (PrayerConfig) -> Unit) {
     Row(Modifier.fillMaxWidth(),
@@ -348,10 +347,6 @@ fun SalatPrayerSelector(selected: PrayerConfig, onSelect: (PrayerConfig) -> Unit
     }
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  Carte compteur
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
 @Composable
 fun SalatCounterCard(
     value: Int, label: String, sublabel: String,
@@ -379,10 +374,6 @@ fun SalatCounterCard(
         }
     }
 }
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  Progress bar
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 @Composable
 fun SalatProgressBar(progress: Float, rakaat: Int, target: Int, complete: Boolean) {
@@ -412,10 +403,6 @@ fun SalatProgressBar(progress: Float, rakaat: Int, target: Int, complete: Boolea
         }
     }
 }
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  Instructions
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 @Composable
 fun SalatInstructionsCard(hasSensor: Boolean) {
@@ -458,10 +445,6 @@ fun SalatInstRow(icon: String, text: String) {
         Text(text, color = QuranColors.TextSecondary, fontSize = 11.sp, lineHeight = 17.sp)
     }
 }
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  Boutons — DÉMARRER désactivé si prière complète
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 @Composable
 fun SalatControlButtons(

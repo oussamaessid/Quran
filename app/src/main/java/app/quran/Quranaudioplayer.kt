@@ -1,6 +1,7 @@
 package app.quran
 
 import android.media.MediaPlayer
+import android.os.Build
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,10 +26,16 @@ class QuranAudioPlayer {
     /** Called when a track finishes naturally — set by ViewModel. */
     var onCompletion: (() -> Unit)? = null
 
+    /**
+     * true → fin naturelle du track ne passe PAS par STOPPED (chaînage sans flash).
+     * One-shot : remis à false immédiatement après usage.
+     */
+    var silentNextCompletion: Boolean = false
+
     private val _playbackInfo = MutableStateFlow(AudioPlaybackInfo())
     val playbackInfo: StateFlow<AudioPlaybackInfo> = _playbackInfo.asStateFlow()
 
-    fun play(url: String, startMs: Long = 0L) {
+    fun play(url: String, startMs: Long = 0L, silentSwitch: Boolean = false) {
         scope.launch {
             if (url == currentUrl && mediaPlayer != null) {
                 resume()
@@ -36,11 +43,19 @@ class QuranAudioPlayer {
             }
 
             stopTick()
-            emit(AudioPlayerState.LOADING, 0L, 0L)
+            if (!silentSwitch) emit(AudioPlayerState.LOADING, 0L, 0L)
 
             withContext(Dispatchers.IO) {
                 try {
-                    mediaPlayer?.release()
+                    val old = mediaPlayer
+                    mediaPlayer = null
+                    if (silentSwitch) {
+                        runCatching { old?.release() }
+                    } else {
+                        runCatching { if (old?.isPlaying == true) old.stop() }
+                        runCatching { old?.release() }
+                    }
+
                     mediaPlayer = MediaPlayer().apply {
                         setDataSource(url)
                         prepare()
@@ -57,11 +72,20 @@ class QuranAudioPlayer {
 
                     mp.setOnCompletionListener {
                         stopTick()
-                        emit(AudioPlayerState.STOPPED, dur, dur)
-                        onCompletion?.invoke()   // ← notifie le ViewModel
+                        // ── One-shot silent flag ──────────────────────────────
+                        val silent = silentNextCompletion
+                        silentNextCompletion = false   // reset immédiat
+                        if (!silent) emit(AudioPlayerState.STOPPED, dur, dur)
+                        onCompletion?.invoke()
                     }
 
-                    if (startMs > 0) mp.seekTo(startMs.toInt())
+                    if (startMs > 0) {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            mp.seekTo(startMs, MediaPlayer.SEEK_CLOSEST)
+                        } else {
+                            mp.seekTo(startMs.toInt())
+                        }
+                    }
                     mp.start()
                     startTick()
                     emit(AudioPlayerState.PLAYING, mp.currentPosition.toLong(), dur)
@@ -94,13 +118,18 @@ class QuranAudioPlayer {
         val mp  = mediaPlayer ?: return
         val dur = mp.duration.toLong().coerceAtLeast(0L)
         val pos = ms.coerceIn(0L, dur)
-        mp.seekTo(pos.toInt())
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            mp.seekTo(pos, MediaPlayer.SEEK_CLOSEST)
+        } else {
+            mp.seekTo(pos.toInt())
+        }
         val state = if (mp.isPlaying) AudioPlayerState.PLAYING else AudioPlayerState.PAUSED
         emit(state, pos, dur)
     }
 
     fun stop() {
         stopTick()
+        silentNextCompletion = false   // reset au stop explicite
         mediaPlayer?.let {
             runCatching { if (it.isPlaying) it.stop() }
             runCatching { it.reset() }

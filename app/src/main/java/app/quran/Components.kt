@@ -222,36 +222,25 @@ fun BismillahLine(
     }
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// AyahPlayStatus
-// ══════════════════════════════════════════════════════════════════════════════
 enum class AyahPlayStatus { NORMAL, PAST, CURRENT, FUTURE }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// MushafLine
-// ══════════════════════════════════════════════════════════════════════════════
 @Composable
 fun MushafLine(
-    wordsInLine    : List<WordInLine>,
-    wordPositionMap: Map<Int, Int>,
-    fontSize       : TextUnit,
-    lineHeightDp   : Dp,
-    selectedAyahKey: String?,
-    // audioHighlight = Pair(verseKey, wordPosition) of the word being read RIGHT NOW
-    audioHighlight : Pair<String, Int>? = null,
-    // audioActive = any audio mode is running (surah-full OR ayah-playlist)
-    audioActive    : Boolean            = false,
-    centered       : Boolean            = false,
-    pageFont       : FontFamily         = QuranFonts.AmiriQuran,
-    onAyahSelected : (String?) -> Unit
+    wordsInLine         : List<WordInLine>,
+    wordPositionMap     : Map<Int, Int>,
+    fontSize            : TextUnit,
+    lineHeightDp        : Dp,
+    selectedAyahKey     : String?,
+    audioHighlight      : Pair<String, Int>? = null,
+    audioActive         : Boolean            = false,
+    surahColoringEnabled: Boolean            = false,
+    centered            : Boolean            = false,
+    pageFont            : FontFamily         = QuranFonts.AmiriQuran,
+    onAyahSelected      : (String?) -> Unit
 ) {
-    val sorted = remember(wordsInLine) { wordsInLine.sortedBy { it.word.id } }
-
-    // The verse currently being read — derived directly from the highlight signal.
-    // This is the single source of truth for PAST/CURRENT/FUTURE coloring.
-    val activeVerseKey: String? = audioHighlight?.first
-
-    val hasSelection = !audioActive && selectedAyahKey != null
+    val sorted         = remember(wordsInLine) { wordsInLine.sortedBy { it.word.id } }
+    val activeVerseKey : String? = audioHighlight?.first
+    val hasSelection   = !audioActive && selectedAyahKey != null
 
     SubcomposeLayout(
         modifier = Modifier.fillMaxWidth().height(lineHeightDp)
@@ -264,39 +253,35 @@ fun MushafLine(
             val verseKey = item.verse.verseKey
             val isEnd    = item.word.charTypeName == "end"
 
-            // Golden tap highlight (only when no audio)
             val isAyah = verseKey == selectedAyahKey && !audioActive
 
-            // The exact word lit by the audio position
             val isAudioWord = !isEnd
                     && audioHighlight != null
-                    && audioHighlight.first == verseKey
+                    && audioHighlight.first  == verseKey
                     && wordPositionMap[item.word.id] == audioHighlight.second
 
-            // ── Compute PAST / CURRENT / FUTURE ──────────────────────────────
             val ayahStatus: AyahPlayStatus = when {
 
-                audioActive -> {
+                audioActive && surahColoringEnabled -> {
                     when {
-                        // No word highlighted yet (loading / between ayahs)
-                        activeVerseKey == null -> AyahPlayStatus.NORMAL
-
+                        activeVerseKey == null     -> AyahPlayStatus.NORMAL
                         verseKey == activeVerseKey -> AyahPlayStatus.CURRENT
-
                         else -> {
-                            // Compare surah:ayah numerically
                             val aSurah = activeVerseKey.substringBefore(":").toIntOrNull() ?: 0
                             val aAyah  = activeVerseKey.substringAfter(":").toIntOrNull()  ?: 0
                             val tSurah = verseKey.substringBefore(":").toIntOrNull() ?: 0
                             val tAyah  = verseKey.substringAfter(":").toIntOrNull()  ?: 0
-                            val before = tSurah < aSurah ||
-                                    (tSurah == aSurah && tAyah < aAyah)
+                            val before = tSurah < aSurah || (tSurah == aSurah && tAyah < aAyah)
                             if (before) AyahPlayStatus.PAST else AyahPlayStatus.FUTURE
                         }
                     }
                 }
-
-                // Tap selection (no audio active)
+                audioActive && !surahColoringEnabled -> {
+                    when {
+                        activeVerseKey != null && verseKey == activeVerseKey -> AyahPlayStatus.CURRENT
+                        else                                                  -> AyahPlayStatus.NORMAL
+                    }
+                }
                 hasSelection -> when {
                     verseKey == selectedAyahKey -> AyahPlayStatus.CURRENT
                     else                        -> AyahPlayStatus.PAST
@@ -348,9 +333,6 @@ fun MushafLine(
     }
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// WordChip
-// ══════════════════════════════════════════════════════════════════════════════
 @Composable
 fun WordChip(
     word        : Word,
@@ -374,7 +356,7 @@ fun WordChip(
         isAyah                               -> QuranColors.Gold.copy(alpha = 0.75f)
         ayahStatus == AyahPlayStatus.CURRENT -> QuranColors.ArabicText.copy(alpha = 0.22f)
         ayahStatus == AyahPlayStatus.PAST    -> QuranColors.ArabicText.copy(alpha = 0.75f)
-        ayahStatus == AyahPlayStatus.FUTURE  -> QuranColors.ArabicText.copy(alpha = 0.18f)
+        ayahStatus == AyahPlayStatus.FUTURE  -> QuranColors.ArabicText
         else                                 -> QuranColors.ArabicText
     }
 

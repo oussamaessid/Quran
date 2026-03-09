@@ -33,10 +33,6 @@ import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  DATA
-// ─────────────────────────────────────────────────────────────────────────────
-
 data class AdhkarCategory(
     val titleArabic : String,
     val titleFr     : String,
