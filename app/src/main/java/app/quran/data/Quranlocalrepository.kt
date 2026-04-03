@@ -2,6 +2,7 @@ package app.quran.data
 
 import android.content.Context
 import com.google.gson.Gson
+import java.io.File
 
 class QuranLocalRepository(private val context: Context) {
 
@@ -12,14 +13,17 @@ class QuranLocalRepository(private val context: Context) {
         cache[pageNumber]?.let { return Result.success(it) }
 
         return try {
-            val fileName = "quran/pages/$pageNumber.json"
-            val json     = context.assets.open(fileName).bufferedReader().use { it.readText() }
-            val pageJson = gson.fromJson(json, PageJson::class.java)
-            val page     = pageJson.toQuranPage()
+            val file = File(context.filesDir, "quran/pages/$pageNumber.json")
+
+            if (!file.exists())
+                return Result.failure(Exception("Page $pageNumber not downloaded yet"))
+
+            val page = gson.fromJson(file.readText(), PageJson::class.java).toQuranPage()
             cache[pageNumber] = page
             Result.success(page)
+
         } catch (e: Exception) {
-            Result.failure(Exception("Impossible de charger la page $pageNumber : ${e.message}"))
+            Result.failure(Exception("Cannot load page $pageNumber: ${e.message}"))
         }
     }
 

@@ -70,6 +70,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -85,6 +86,7 @@ import app.quran.data.QuranPage
 import app.quran.data.UiState
 import app.quran.data.WordInLine
 import app.quran.viewmodel.QuranViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private enum class TopBarState { DEFAULT, SURAH_AUDIO, AYAH_AUDIO }
@@ -106,12 +108,12 @@ fun QuranScreen(
     val currentSurahId by vm.currentAudioSurahId.collectAsStateWithLifecycle()
     val navigateToPage by vm.navigateToPageIndex.collectAsStateWithLifecycle()
     val savedAyahs by vm.savedAyahs.collectAsStateWithLifecycle()
-
+    val view = LocalView.current
+    val audioIsActive = showSurahAudioBar || (showAudioSheet && audioChoiceMade)
+    val noNetworkMessage by vm.noNetworkMessage.collectAsStateWithLifecycle()
     var showIndex by remember { mutableStateOf(false) }
     var showSurahPicker by remember { mutableStateOf(false) }
     var showSaved by remember { mutableStateOf(false) }
-    val view = LocalView.current
-    val audioIsActive = showSurahAudioBar || (showAudioSheet && audioChoiceMade)
 
     LaunchedEffect(audioIsActive) {
         view.keepScreenOn = audioIsActive
@@ -121,7 +123,6 @@ fun QuranScreen(
     }
     DisposableEffect(Unit) {
         onDispose {
-            // L'écran Quran est quitté → arrêter l'audio et le service
             vm.stopAudio()
         }
     }
@@ -215,6 +216,9 @@ fun QuranScreen(
                 }
             }
         }
+        noNetworkMessage?.let { msg ->
+            NoNetworkToast(message = msg, onDismiss = { vm.dismissNetworkMessage() })
+        }
     }
 
     if (showSurahPicker) {
@@ -237,7 +241,47 @@ fun QuranScreen(
     }
 }
 
+@Composable
+fun NoNetworkToast(message: String, onDismiss: () -> Unit) {
+    LaunchedEffect(message) {
+        delay(3500)
+        onDismiss()
+    }
 
+    Box(
+        Modifier.fillMaxSize(),
+        contentAlignment = Alignment.BottomCenter
+    ) {
+        Box(
+            Modifier
+                .padding(horizontal = 24.dp, vertical = 32.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .background(
+                    Brush.horizontalGradient(
+                        listOf(Color(0xFF1A0800), Color(0xFF2A1200), Color(0xFF1A0800))
+                    )
+                )
+                .border(1.dp, QuranColors.GoldDim.copy(alpha = 0.6f), RoundedCornerShape(14.dp))
+                .noRippleClickable { onDismiss() }
+                .padding(horizontal = 18.dp, vertical = 14.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Row(
+                verticalAlignment     = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Text("📵", fontSize = 20.sp)
+                Text(
+                    text      = message,
+                    fontSize  = 12.sp,
+                    color     = QuranColors.GoldWarm,
+                    textAlign = TextAlign.Center,
+                    lineHeight = 18.sp
+                )
+            }
+        }
+    }
+}
 @Composable
 fun AyahAudioTopBar(
     vm: QuranViewModel, chapters: List<Chapter>, verseKey: String, onDismiss: () -> Unit
@@ -700,7 +744,7 @@ fun MushafPageContent(
     onAyahSelected: (String?) -> Unit,
     onDismissAudio: () -> Unit
 ) {
-    val isCenteredPage = quranPage.pageNumber <= 2 || quranPage.pageNumber >= 601
+    val isCenteredPage = quranPage.pageNumber <= 2 || quranPage.pageNumber >= 602
     val isShortPage = quranPage.pageNumber <= 2
     val audioActive = audioChoiceMade || showSurahAudioBar
     val density = LocalDensity.current

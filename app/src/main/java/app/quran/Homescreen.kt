@@ -1,5 +1,6 @@
 package app.quran
 
+import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
 import android.provider.Settings
@@ -50,6 +51,7 @@ fun HomeScreen(
     onOpenTasbih       : () -> Unit,
     onOpenAdhkar       : () -> Unit,
     onOpenSalat        : () -> Unit,
+    onOpenAudio        : () -> Unit,
 ) {
     val state         by prayerVm.state.collectAsStateWithLifecycle()
     val context       = LocalContext.current
@@ -60,14 +62,24 @@ fun HomeScreen(
     LaunchedEffect(locationReady)     { if (locationReady)      prayerVm.loadPrayerTimes() }
     LaunchedEffect(permissionGranted) { if (!permissionGranted) onRequestPermission() }
 
+    val prefs       = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+    val isFirstOpen = remember { prefs.getBoolean("is_first_open", true) }
     var dialogDismissed by remember { mutableStateOf(false) }
-    if (permissionGranted && !gpsEnabled && !dialogDismissed) {
+
+    if (permissionGranted && !gpsEnabled && isFirstOpen && !dialogDismissed) {
         GpsActivationDialog(
-            onOpenGps = { context.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)) },
-            onDismiss = { dialogDismissed = true }
+            onOpenGps = {
+                context.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+                prefs.edit().putBoolean("is_first_open", false).apply()
+                dialogDismissed = true
+            },
+            onDismiss = {
+                prefs.edit().putBoolean("is_first_open", false).apply()
+                dialogDismissed = true
+            }
         )
     }
-    LaunchedEffect(gpsEnabled) { if (!gpsEnabled) dialogDismissed = false }
+
 
     Box(Modifier.fillMaxSize().background(QuranColors.Panel)) {
         DecorativeBackground()
@@ -103,7 +115,8 @@ fun HomeScreen(
                     NavCardLandscape("🧭","القبلة","Al-Qibla","Direction de la Mecque", onOpenQibla)
                     NavCardLandscape("📿","التسبيح","Tasbih","Compteur de dhikr", onOpenTasbih)
                     NavCardLandscape("🤲","الأذكار","Adhkar","Remembrances coraniques", onOpenAdhkar)
-                    NavCardLandscape("🕌","الصلاة","Salat","Compteur rak'ahs · capteur lumière", onOpenSalat) // ← NOUVEAU
+                    NavCardLandscape("🕌","الصلاة","Salat","Compteur rak'ahs · capteur lumière", onOpenSalat)
+                    NavCardLandscape("🎧","الاستماع","Audio","Écoute · Récitants complets", onOpenAudio)
                     Text("بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ", fontSize = 12.sp,
                         color = QuranColors.GoldDim.copy(alpha = 0.5f),
                         style = TextStyle(textDirection = TextDirection.Rtl),
@@ -157,6 +170,18 @@ fun HomeScreen(
                         onClick       = onOpenQuran
                     )
                     NavCardVertical(
+                        icon          = "🎧",
+                        titleArabic   = "الاستماع إلى القرآن",
+                        titleLatin    = "Audio",
+                        subtitle      = "Écoute · Récitants complets · 114 sourates",
+                        badge         = "AUDIO",
+                        accentColor   = QuranColors.GoldBlaze,
+                        titleColor    = QuranColors.GoldBlaze,
+                        gradientStart = Color(0xFF2A1A04),
+                        gradientEnd   = Color(0xFF1A0C00),
+                        onClick       = onOpenAudio
+                    )
+                    NavCardVertical(
                         icon          = "🧭",
                         titleArabic   = "القبلة",
                         titleLatin    = "Al-Qibla",
@@ -204,20 +229,15 @@ fun HomeScreen(
                         gradientEnd   = Color(0xFF1A0C00),
                         onClick       = onOpenSalat
                     )
+
                 }
-//
-//                Spacer(Modifier.height(24.dp))
-//                Text(
-//                    "بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ",
-//                    fontSize = 13.sp, color = QuranColors.GoldDim.copy(alpha = 0.4f),
-//                    style = TextStyle(textDirection = TextDirection.Rtl),
-//                    textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()
-//                )
+
                 Spacer(Modifier.height(24.dp))
             }
         }
     }
 }
+
 private val prayerIcons = mapOf(
     "Fajr"    to "🌙",
     "Dhuhr"   to "☀️",
@@ -237,7 +257,6 @@ fun PrayerTimesCard(pt: app.quran.viewmodel.PrayerTimes) {
     val now    = Calendar.getInstance()
     val nowMin = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE)
 
-    // 5 prayers only — no Sunrise
     val prayers = listOf(
         Triple("الفجر",  "Fajr",    pt.fajr),
         Triple("الظهر",  "Dhuhr",   pt.dhuhr),
@@ -260,7 +279,6 @@ fun PrayerTimesCard(pt: app.quran.viewmodel.PrayerTimes) {
                 RoundedCornerShape(22.dp))
     ) {
         Column {
-            // ── Animated gold shimmer strip ───────────────────────────────────
             Box(
                 Modifier.fillMaxWidth().height(2.dp)
                     .clip(RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp))
@@ -276,12 +294,10 @@ fun PrayerTimesCard(pt: app.quran.viewmodel.PrayerTimes) {
 
             Column(Modifier.padding(horizontal = 18.dp, vertical = 16.dp)) {
 
-                // ── Header ────────────────────────────────────────────────────
                 Row(Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.Top) {
 
-                    // City + Hijri date
                     Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -307,7 +323,6 @@ fun PrayerTimesCard(pt: app.quran.viewmodel.PrayerTimes) {
                         }
                     }
 
-                    // Next prayer badge
                     Box(
                         Modifier.clip(RoundedCornerShape(14.dp))
                             .background(Brush.linearGradient(
@@ -340,7 +355,6 @@ fun PrayerTimesCard(pt: app.quran.viewmodel.PrayerTimes) {
 
                 Spacer(Modifier.height(16.dp))
 
-                // ── Central gold divider ──────────────────────────────────────
                 Row(
                     Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -356,7 +370,6 @@ fun PrayerTimesCard(pt: app.quran.viewmodel.PrayerTimes) {
 
                 Spacer(Modifier.height(12.dp))
 
-                // ── 5 prayer rows ─────────────────────────────────────────────
                 prayers.forEachIndexed { index, (arabic, latin, time) ->
                     val parts  = time.split(":")
                     val pMin   = (parts[0].toIntOrNull() ?: 0) * 60 + (parts.getOrNull(1)?.toIntOrNull() ?: 0)
@@ -377,7 +390,6 @@ fun PrayerTimesCard(pt: app.quran.viewmodel.PrayerTimes) {
                 }
             }
 
-            // ── Bottom gold shimmer strip ─────────────────────────────────────
             Box(
                 Modifier.fillMaxWidth().height(1.dp)
                     .clip(RoundedCornerShape(bottomStart = 22.dp, bottomEnd = 22.dp))
@@ -416,7 +428,6 @@ fun PrayerRowCreative(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Icon circle
         Box(
             Modifier.size(34.dp).clip(CircleShape)
                 .background(
@@ -429,7 +440,6 @@ fun PrayerRowCreative(
             contentAlignment = Alignment.Center
         ) { Text(icon, fontSize = 14.sp) }
 
-        // Names
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
             Text(arabic, fontSize = 14.sp, color = nameColor,
                 fontWeight = if (isNext) FontWeight.Bold else FontWeight.Medium,
@@ -437,7 +447,6 @@ fun PrayerRowCreative(
             Text(latin, fontSize = 9.sp, color = nameColor.copy(alpha = 0.45f), letterSpacing = 0.8.sp)
         }
 
-        // Past check
         if (isPast && !isNext) {
             Box(Modifier.size(17.dp).clip(CircleShape)
                 .background(QuranColors.GoldDim.copy(alpha = 0.12f))
@@ -447,13 +456,11 @@ fun PrayerRowCreative(
             }
         }
 
-        // Live dot for next
         if (isNext) {
             Box(Modifier.size(6.dp).clip(CircleShape)
                 .background(QuranColors.GoldBlaze.copy(alpha = pulse)))
         }
 
-        // Time
         Text(time, fontSize = 15.sp, color = timeColor,
             fontWeight = if (isNext) FontWeight.ExtraBold else FontWeight.Normal,
             letterSpacing = 0.5.sp)
@@ -587,6 +594,7 @@ fun NavCardLandscape(icon: String, titleArabic: String, titleLatin: String, subt
     }
 }
 
+
 @Composable
 fun GpsActivationDialog(onOpenGps: () -> Unit, onDismiss: () -> Unit) {
     Dialog(onDismissRequest = { onDismiss() },
@@ -601,10 +609,10 @@ fun GpsActivationDialog(onOpenGps: () -> Unit, onDismiss: () -> Unit) {
                     .border(1.5.dp, QuranColors.Gold, CircleShape), contentAlignment = Alignment.Center) {
                     Text("📍", fontSize = 32.sp)
                 }
-                Text("تفعيل نظام GPS", fontSize = 22.sp, color = QuranColors.GoldBlaze,
+                Text("تفعيل نظام الموقع", fontSize = 22.sp, color = QuranColors.GoldBlaze,
                     fontWeight = FontWeight.Bold, style = TextStyle(textDirection = TextDirection.Rtl))
                 HorizontalDivider(color = QuranColors.PanelBorder, thickness = 0.5.dp)
-                Text("لعرض أوقات الصلاة الدقيقة، يرجى تفعيل نظام تحديد الموقع (GPS) على هاتفك.",
+                Text("لعرض أوقات الصلاة الدقيقة، يرجى تفعيل نظام تحديد الموقع على هاتفك.",
                     fontSize = 13.sp, color = QuranColors.TextSecondary, textAlign = TextAlign.Center,
                     style = TextStyle(textDirection = TextDirection.Rtl), lineHeight = 22.sp)
                 Text("بعد التفعيل، ستظهر الأوقات تلقائياً دون الحاجة إلى أي إجراء إضافي.",
@@ -628,6 +636,7 @@ fun GpsActivationDialog(onOpenGps: () -> Unit, onDismiss: () -> Unit) {
         }
     }
 }
+
 @Composable
 fun DecorativeBackground() {
     val inf = rememberInfiniteTransition(label = "bg")
@@ -677,10 +686,6 @@ fun AppHeader() {
         }
     }
 }
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  LOADING / ERROR
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 @Composable
 fun PrayerTimesLoadingCard() {

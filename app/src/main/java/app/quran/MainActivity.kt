@@ -10,6 +10,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
@@ -20,11 +21,11 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
-import app.quran.viewmodel.QuranViewModel
+import app.quran.data.DataInstallManager
+import app.quran.viewmodel.InstallViewModel
 import app.quran.viewmodel.SalatViewModel
 
-// ── Écrans de l'app ───────────────────────────────────────────────────────────
-enum class AppScreen { HOME, QURAN, QIBLA, TASBIH, ADHKAR, SALAT }
+enum class AppScreen { INSTALL, HOME, QURAN, QIBLA, TASBIH, ADHKAR, SALAT, AUDIO }
 
 class MainActivity : ComponentActivity() {
 
@@ -35,9 +36,15 @@ class MainActivity : ComponentActivity() {
             .isAppearanceLightStatusBars = false
 
         setContent {
-            val quranVm : QuranViewModel = viewModel()
-            val salatVm : SalatViewModel = viewModel()   // ← ViewModel Salat partagé
-            var currentScreen by remember { mutableStateOf(AppScreen.HOME) }
+            val installVm : InstallViewModel = viewModel()
+            val salatVm   : SalatViewModel   = viewModel()
+
+            var currentScreen by remember {
+                mutableStateOf(
+                    if (DataInstallManager.isInstalled(this)) AppScreen.HOME
+                    else AppScreen.INSTALL
+                )
+            }
 
             fun hasPermission() = ContextCompat.checkSelfPermission(
                 this, Manifest.permission.ACCESS_FINE_LOCATION
@@ -82,10 +89,16 @@ class MainActivity : ComponentActivity() {
             ) {
                 AnimatedContent(
                     targetState    = currentScreen,
-                    transitionSpec = { fadeIn() togetherWith fadeOut() },
-                    label          = "screen",
+                    transitionSpec = { fadeIn(tween(500)) togetherWith fadeOut(tween(350)) },
+                    label          = "screen"
                 ) { screen ->
                     when (screen) {
+
+                        AppScreen.INSTALL -> InstallScreen(
+                            vm                = installVm,
+                            onInstallComplete = { currentScreen = AppScreen.HOME }
+                        )
+
                         AppScreen.HOME -> HomeScreen(
                             permissionGranted   = permissionGranted,
                             gpsEnabled          = gpsEnabled,
@@ -100,22 +113,31 @@ class MainActivity : ComponentActivity() {
                             onOpenTasbih = { currentScreen = AppScreen.TASBIH },
                             onOpenAdhkar = { currentScreen = AppScreen.ADHKAR },
                             onOpenSalat  = { currentScreen = AppScreen.SALAT },
+                            onOpenAudio  = { currentScreen = AppScreen.AUDIO },
                         )
+
                         AppScreen.QURAN -> QuranScreen(
-                            vm     = quranVm,
                             onBack = { currentScreen = AppScreen.HOME }
                         )
+
                         AppScreen.QIBLA -> QiblaScreen(
                             onBack = { currentScreen = AppScreen.HOME }
                         )
+
                         AppScreen.TASBIH -> TasbihScreen(
                             onBack = { currentScreen = AppScreen.HOME }
                         )
+
                         AppScreen.ADHKAR -> AdhkarScreen(
                             onBack = { currentScreen = AppScreen.HOME }
                         )
+
                         AppScreen.SALAT -> SalatScreen(
                             vm     = salatVm,
+                            onBack = { currentScreen = AppScreen.HOME }
+                        )
+
+                        AppScreen.AUDIO -> AudioScreen(
                             onBack = { currentScreen = AppScreen.HOME }
                         )
                     }

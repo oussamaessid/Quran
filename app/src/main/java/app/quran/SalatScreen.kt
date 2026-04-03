@@ -1,5 +1,6 @@
 package app.quran
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
@@ -37,6 +38,7 @@ fun SalatScreen(
     vm    : SalatViewModel = viewModel(),
     onBack: () -> Unit,
 ) {
+    BackHandler { onBack() }
     val s by vm.state.collectAsStateWithLifecycle()
     DisposableEffect(Unit) { onDispose { vm.pauseSession() } }
     val view = LocalView.current
@@ -501,10 +503,6 @@ fun SalatControlButtons(
         }
     }
 }
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  Décorations
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 @Composable
 fun SalatDecorativeRings() {

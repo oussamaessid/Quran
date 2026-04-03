@@ -1,7 +1,10 @@
 package app.quran.viewmodel
 
 import android.app.Application
+import android.content.Context
 import android.content.Intent
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.Build
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -9,7 +12,17 @@ import app.quran.AudioPlaybackInfo
 import app.quran.AudioPlaybackService
 import app.quran.AudioPlayerState
 import app.quran.QuranAudioPlayer
-import app.quran.data.*
+import app.quran.data.AudioLocalRepository
+import app.quran.data.AudioTimingRepository
+import app.quran.data.Chapter
+import app.quran.data.LastPageRepository
+import app.quran.data.QuranLocalRepository
+import app.quran.data.QuranPage
+import app.quran.data.SavedAyah
+import app.quran.data.SavedAyahsRepository
+import app.quran.data.SurahAudioTiming
+import app.quran.data.TranslatedName
+import app.quran.data.UiState
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
@@ -18,16 +31,11 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
     companion object {
         const val TOTAL_PAGES             = 606
         private const val PREFETCH_RADIUS = 2
-
-        private fun surahUrl(surahId: Int) =
-            "https://download.quranicaudio.com/qdc/mishari_al_afasy/murattal/$surahId.mp3"
-
-        private fun ayahUrl(surahId: Int, ayahNumber: Int): String {
-            val s = surahId.toString().padStart(3, '0')
-            val a = ayahNumber.toString().padStart(3, '0')
-            return "https://verses.quran.com/Alafasy/mp3/$s$a.mp3"
-        }
     }
+
+    private fun surahUrl(surahId: Int): String = AudioLocalRepository.surahUrl(surahId)
+    private fun ayahUrl(surahId: Int, ayahNumber: Int): String =
+        AudioLocalRepository.ayahUrl(surahId, ayahNumber)
 
     private val repository = QuranLocalRepository(application)
     private val savedRepo  = SavedAyahsRepository.get(application)
@@ -79,6 +87,12 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
 
     fun onAutoTurnConsumed() { _autoTurnPageSignal.value = null }
 
+    // ── Message réseau ────────────────────────────────────────────────────────
+    private val _noNetworkMessage = MutableStateFlow<String?>(null)
+    val noNetworkMessage: StateFlow<String?> = _noNetworkMessage.asStateFlow()
+
+    fun dismissNetworkMessage() { _noNetworkMessage.value = null }
+
     // ── Audio engine ──────────────────────────────────────────────────────────
     private val audioPlayer = QuranAudioPlayer()
     val playbackInfo: StateFlow<AudioPlaybackInfo> = audioPlayer.playbackInfo
@@ -97,9 +111,7 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
     private val _showSurahAudioBar = MutableStateFlow(false)
     val showSurahAudioBar: StateFlow<Boolean> = _showSurahAudioBar.asStateFlow()
 
-    // ── Ayah+ mode flag ───────────────────────────────────────────────────────
-    // true  → mode ayah+ chaîné  → zéro coloration PAST/FUTURE, mot gold seulement
-    // false → mode ayah seule ou sourate complète → coloration normale
+    // ── Ayah+ mode ────────────────────────────────────────────────────────────
     private val _isAyahPlusMode = MutableStateFlow(false)
     val isAyahPlusMode: StateFlow<Boolean> = _isAyahPlusMode.asStateFlow()
 
@@ -126,7 +138,6 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
             var wasPlaying = false
             while (isActive) {
                 delay(80)
-
                 if (isPreparingAudio) continue
 
                 val info   = audioPlayer.playbackInfo.value
@@ -138,43 +149,32 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
                         val posMs  = info.positionMs
 
                         if (_showSurahAudioBar.value) {
-                            // ── Mode sourate complète ─────────────────────────
                             val word = timing.wordAt(posMs)
                             if (word != null) {
                                 val next = word.verseKey to word.position
                                 if (_audioHighlight.value != next) _audioHighlight.value = next
-
                                 val wordPage    = getPageForVerse(word.verseKey)
                                 val currentPage = _currentIndex.value + 1
-                                if (wordPage != null
-                                    && wordPage != currentPage
-                                    && wordPage != lastAutoTurnTargetPage
-                                ) {
+                                if (wordPage != null && wordPage != currentPage
+                                    && wordPage != lastAutoTurnTargetPage) {
                                     lastAutoTurnTargetPage    = wordPage
                                     _autoTurnPageSignal.value = wordPage - 1
                                 }
                             } else {
                                 if (_audioHighlight.value != null) _audioHighlight.value = null
                             }
-
                         } else if (_audioChoiceMade.value) {
-                            // ── Mode ayah (chaîné ou seul) ────────────────────
                             val rawWord = timing.wordAt(posMs + ayahTimingOffset)
-
                             val word = rawWord?.takeIf { w ->
                                 ayahOnlyKey == null || w.verseKey == ayahOnlyKey
                             }
-
                             if (word != null) {
                                 val next = word.verseKey to word.position
                                 if (_audioHighlight.value != next) _audioHighlight.value = next
-
                                 val wordPage    = getPageForVerse(word.verseKey)
                                 val currentPage = _currentIndex.value + 1
-                                if (wordPage != null
-                                    && wordPage != currentPage
-                                    && wordPage != lastAutoTurnTargetPage
-                                ) {
+                                if (wordPage != null && wordPage != currentPage
+                                    && wordPage != lastAutoTurnTargetPage) {
                                     lastAutoTurnTargetPage    = wordPage
                                     _autoTurnPageSignal.value = wordPage - 1
                                 }
@@ -184,16 +184,12 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
                         }
                     }
 
-                    info.state == AudioPlayerState.PLAYING -> {
-                        wasPlaying = true
-                    }
+                    info.state == AudioPlayerState.PLAYING -> { wasPlaying = true }
 
                     info.state == AudioPlayerState.STOPPED ||
                             info.state == AudioPlayerState.IDLE -> {
-
                         if (!isChaining && !isPreparingAudio) {
                             if (_audioHighlight.value != null) _audioHighlight.value = null
-
                             if (wasPlaying && _audioChoiceMade.value && _previousAyahKey != null) {
                                 wasPlaying             = false
                                 val restored           = _previousAyahKey
@@ -207,12 +203,33 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
                         }
                     }
 
-                    else -> { /* LOADING / BUFFERING → conserver le highlight */ }
+                    else -> {}
                 }
 
                 if (info.state == AudioPlayerState.PLAYING) wasPlaying = true
             }
         }
+    }
+
+    // ── Réseau ────────────────────────────────────────────────────────────────
+    private fun isNetworkAvailable(): Boolean {
+        val cm = getApplication<Application>()
+            .getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val net  = cm.activeNetwork ?: return false
+            val caps = cm.getNetworkCapabilities(net) ?: return false
+            caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+        } else {
+            @Suppress("DEPRECATION")
+            cm.activeNetworkInfo?.isConnected == true
+        }
+    }
+
+    private fun requireNetwork(): Boolean {
+        if (isNetworkAvailable()) return true
+        _noNetworkMessage.value =
+            "Pas de connexion Internet.\nActivez le Wi-Fi ou les données mobiles."
+        return false
     }
 
     // ── Completion naturelle ──────────────────────────────────────────────────
@@ -322,8 +339,8 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
             }
             return
         }
-        _pages.update { it + (pageNumber to UiState.Loading) }
-        val state = repository.loadPage(pageNumber).fold(
+        _pages.update { it + (pageNumber to (UiState.Loading as UiState<QuranPage>)) }
+        val state: UiState<QuranPage> = repository.loadPage(pageNumber).fold(
             onSuccess = { UiState.Success(it) },
             onFailure = { UiState.Error(it.message ?: "Error page $pageNumber") }
         )
@@ -368,7 +385,8 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
 
     // ── Audio: ayah seule ─────────────────────────────────────────────────────
     fun playAyahOnly(verseKey: String) {
-        _isAyahPlusMode.value  = false   // ← ayah seule → coloration normale
+        if (!requireNetwork()) return
+        _isAyahPlusMode.value  = false
 
         val surahId = verseKey.substringBefore(":").toIntOrNull() ?: return
         val ayahNum = verseKey.substringAfter(":").toIntOrNull()  ?: return
@@ -400,7 +418,8 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
 
     // ── Audio: ayah + reste de la sourate ─────────────────────────────────────
     fun playAyahAndRest(verseKey: String) {
-        _isAyahPlusMode.value  = true    // ← ayah+ → zéro coloration PAST/FUTURE
+        if (!requireNetwork()) return
+        _isAyahPlusMode.value  = true
 
         val surahId = verseKey.substringBefore(":").toIntOrNull() ?: return
         val ayahNum = verseKey.substringAfter(":").toIntOrNull()  ?: return
@@ -473,7 +492,8 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
 
     // ── Audio: sourate complète ───────────────────────────────────────────────
     fun playSurahFull(verseKey: String) {
-        _isAyahPlusMode.value  = false   // ← sourate → coloration normale
+        if (!requireNetwork()) return
+        _isAyahPlusMode.value  = false
 
         val surahId = verseKey.substringBefore(":").toIntOrNull() ?: return
         _previousAyahKey       = null
@@ -488,6 +508,8 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
     fun playSurahAndNavigate(surahId: Int, autoPlay: Boolean = false) {
         val chapter   = _chapters.value.find { it.id == surahId } ?: return
         val firstPage = chapter.pages.firstOrNull() ?: return
+
+        if (autoPlay && !requireNetwork()) return
 
         isPreparingAudio           = false
         isChaining                 = false
@@ -528,6 +550,7 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
         val idle    = state == AudioPlayerState.IDLE || state == AudioPlayerState.STOPPED
 
         if (idle && surahId > 0) {
+            if (!requireNetwork()) return
             val title = _chapters.value.find { it.id == surahId }?.nameSimple ?: "Quran Audio"
             viewModelScope.launch(Dispatchers.IO) {
                 ensureTimingLoaded(surahId)
