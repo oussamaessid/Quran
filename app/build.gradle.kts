@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "app.quran"
+    namespace = "app.nouralroh"
     compileSdk = 36
 
     defaultConfig {
