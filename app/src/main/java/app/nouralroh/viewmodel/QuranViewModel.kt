@@ -603,7 +603,6 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
     }
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
 private data class SurahMeta(
     val id: Int, val firstPage: Int,
     val nameSimple: String, val nameArabic: String,

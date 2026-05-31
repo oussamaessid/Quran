@@ -40,6 +40,7 @@ android {
 }
 
 dependencies {
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -66,6 +67,8 @@ dependencies {
     implementation(libs.accompanist.permissions)
 
     implementation("androidx.media3:media3-exoplayer:1.3.1")
+    implementation("com.google.android.gms:play-services-ads:23.6.0")
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

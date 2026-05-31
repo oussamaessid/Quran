@@ -28,13 +28,7 @@ private const val DEFAULT_LAT  = 21.3891
 private const val DEFAULT_LON  = 39.8579
 private const val DEFAULT_CITY = "مكة المكرمة"
 
-// ── Méthodes de calcul disponibles ───────────────────────────────────────────
-// 2  = ISNA (Amérique du Nord)          ← ANCIENNE VALEUR (incorrecte hors USA)
-// 3  = Muslim World League              ← Recommandé international
-// 4  = Umm Al-Qura (Arabie Saoudite)
-// 9  = Moyen-Orient (Kuwait, Qatar…)
-// 20 = Europe (UOIF / CCME)
-// 21 = Tunisie (Ministère des Affaires Religieuses)
+
 private const val CALCULATION_METHOD = 3   // ← Changer selon votre région
 
 data class PrayerTimes(
@@ -228,7 +222,6 @@ class PrayerTimesViewModel(app: Application) : AndroidViewModel(app) {
                 "${hijri.getJSONObject("month").getString("en")} " +
                 "${hijri.getString("year")} H"
 
-        // ✅ FIX 2 : Sunrise EXCLU de computeNext — ce n'est pas une prière
         val (next, nextT) = computeNext(
             listOf(
                 "Fajr"    to fajr,

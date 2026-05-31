@@ -24,7 +24,6 @@ import androidx.compose.ui.unit.sp
 import app.nouralroh.viewmodel.PrayerTimes
 import java.util.Calendar
 
-// ─── Utilitaires ──────────────────────────────────────────────────────────────
 
 private fun toArabicNumerals(s: String): String {
     val digits = listOf('٠','١','٢','٣','٤','٥','٦','٧','٨','٩')
@@ -201,7 +200,6 @@ fun PrayerTimesWidget(pt: PrayerTimes) {
     }
 }
 
-// ─── Boîte individuelle de prière ────────────────────────────────────────────
 @Composable
 private fun PrayerBox(name: String, time: String, isNext: Boolean, modifier: Modifier) {
     val bgBrush = if (isNext)
