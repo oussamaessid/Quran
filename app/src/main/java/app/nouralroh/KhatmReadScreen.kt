@@ -4,11 +4,9 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -42,17 +40,16 @@ fun KhatmReadScreen(
 
     val todayRange = remember(plan) { vm.todayRange() }
 
-    // ✅ Pages à afficher :
-    // - pages non lues du ward
-    // - + la page bonus (même si déjà lue) pour que l'user puisse la relire
-    val displayPages = remember(todayRange, readPages, bonusStartPage) {
-        val unread = todayRange.filter { it !in readPages }
-        val bonus  = if (bonusStartPage != null && bonusStartPage in readPages) {
-            listOf(bonusStartPage)  // ← ajoute la page bonus lue pour relecture
+    // Toutes les pages du ward (lues + non lues) + bonus si hors du range
+    // → l'utilisateur peut swiper vers السابقة pour revenir sur une page déjà lue
+    val displayPages = remember(todayRange, bonusStartPage) {
+        val base  = todayRange.toList()
+        val bonus = if (bonusStartPage != null && bonusStartPage !in todayRange) {
+            listOf(bonusStartPage)
         } else {
             emptyList()
         }
-        (bonus + unread).distinct().sorted()
+        (bonus + base).distinct().sorted()
     }
 
     if (displayPages.isEmpty()) {
@@ -98,16 +95,8 @@ fun KhatmReadScreen(
             onBack()
         }
 
-        LaunchedEffect(allDone) {
-            if (allDone) {
-                kotlinx.coroutines.delay(1200)
-                onBack()
-            }
-        }
-
         val quranVm  : QuranViewModel = viewModel()
         val chapters by quranVm.chapters.collectAsStateWithLifecycle()
-        val isLastPage = pagerState.currentPage == displayPages.lastIndex
 
         Box(Modifier.fillMaxSize().background(QuranColors.Panel)) {
 
@@ -171,102 +160,6 @@ fun KhatmReadScreen(
                             )
                         }
                     }
-                }
-            }
-
-            // ── Barre du haut ─────────────────────────────────────────────
-            Row(
-                modifier              = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.TopCenter)
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                verticalAlignment     = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                if (isLastPage && !allDone) {
-                    Box(
-                        Modifier
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(Color(0xCC0E0800))
-                            .border(
-                                0.5.dp,
-                                QuranColors.GoldBlaze.copy(alpha = 0.5f),
-                                RoundedCornerShape(20.dp)
-                            )
-                            .clickable {
-                                val lastPage = displayPages.getOrElse(pagerState.currentPage) { -1 }
-                                if (lastPage > 0 && lastPage !in readPages) vm.markPageRead(lastPage)
-                                onBack()
-                            }
-                            .padding(horizontal = 14.dp, vertical = 6.dp)
-                    ) {
-                        Text(
-                            "إنهاء ←",
-                            fontSize   = 12.sp,
-                            color      = QuranColors.GoldBlaze,
-                            fontWeight = FontWeight.SemiBold,
-                            style      = TextStyle(textDirection = TextDirection.Rtl)
-                        )
-                    }
-                } else {
-                    Spacer(Modifier.size(36.dp))
-                }
-
-                // Compteur
-                if (!allDone) {
-                    Box(
-                        Modifier
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Color(0xCC0E0800))
-                            .border(
-                                0.5.dp,
-                                QuranColors.GoldDim.copy(alpha = 0.3f),
-                                RoundedCornerShape(12.dp)
-                            )
-                            .padding(horizontal = 10.dp, vertical = 4.dp)
-                    ) {
-                        Text(
-                            "${pagerState.currentPage + 1} / ${displayPages.size}",
-                            fontSize   = 11.sp,
-                            color      = QuranColors.GoldDim,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                } else {
-                    Box(
-                        Modifier
-                            .clip(CircleShape)
-                            .background(QuranColors.GoldBlaze.copy(alpha = 0.2f))
-                            .border(0.5.dp, QuranColors.GoldBlaze.copy(alpha = 0.5f), CircleShape)
-                            .padding(horizontal = 10.dp, vertical = 6.dp)
-                    ) { Text("🌟", fontSize = 14.sp) }
-                }
-            }
-
-            // ── Indicateur swipe ──────────────────────────────────────────
-            if (!allDone && displayPages.size > 1) {
-                Row(
-                    Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 20.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment     = Alignment.CenterVertically
-                ) {
-                    Text("→", fontSize = 11.sp, color = QuranColors.GoldDim.copy(alpha = 0.5f))
-                    Text(
-                        "التالية",
-                        fontSize = 9.sp,
-                        color    = QuranColors.TextMuted.copy(alpha = 0.5f),
-                        style    = TextStyle(textDirection = TextDirection.Rtl)
-                    )
-                    Spacer(Modifier.width(20.dp))
-                    Text(
-                        "السابقة",
-                        fontSize = 9.sp,
-                        color    = QuranColors.TextMuted.copy(alpha = 0.5f),
-                        style    = TextStyle(textDirection = TextDirection.Rtl)
-                    )
-                    Text("←", fontSize = 11.sp, color = QuranColors.GoldDim.copy(alpha = 0.5f))
                 }
             }
 

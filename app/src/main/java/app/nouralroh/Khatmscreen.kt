@@ -30,10 +30,6 @@ import app.nouralroh.viewmodel.KhatmViewModel
 import kotlin.math.ceil
 import kotlin.math.roundToInt
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Root screen
-// ─────────────────────────────────────────────────────────────────────────────
-
 @Composable
 fun KhatmScreen(
     khatmVm   : KhatmViewModel = viewModel(),
@@ -552,10 +548,7 @@ private fun KhatmTodayCard(
                     ) {
                         chunk.forEach { page ->
                             val done    = page in readPages
-                            // Page bonus = ajoutée par l'utilisateur, avant le ward normal
                             val isBonus = bonusStartPage != null && page < (bonusStartPage + 1)
-                            // ou plus simplement :
-                            // page < todayRange.first quand bonusStartPage != null
 
                             Box(
                                 Modifier
@@ -564,7 +557,7 @@ private fun KhatmTodayCard(
                                     .background(
                                         when {
                                             done    -> QuranColors.GoldBlaze.copy(alpha = 0.2f)
-                                            isBonus -> Color(0xFF0A1A0A)   // vert très sombre = bonus
+                                            isBonus -> Color(0xFF0A1A0A)
                                             else    -> Color(0xFF1C0E00)
                                         }
                                     )
@@ -577,6 +570,7 @@ private fun KhatmTodayCard(
                                         },
                                         RoundedCornerShape(8.dp)
                                     )
+                                    .clickable { onOpenPage(page) }
                                     .padding(vertical = 8.dp),
                                 contentAlignment = Alignment.Center
                             ) {

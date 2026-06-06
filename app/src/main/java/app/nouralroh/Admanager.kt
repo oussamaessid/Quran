@@ -22,10 +22,8 @@ class AdManager(private val context: Context) {
     companion object {
         private const val TAG = "AdManager"
 
-        // ── false en production ───────────────────────────────────
         private const val TEST = false
 
-        // ── IDs pub ───────────────────────────────────────────────
         val APP_OPEN_ID: String
             get() = if (TEST) "ca-app-pub-3940256099942544/9257395921"
             else       "ca-app-pub-2498267529185476/1389455513"
@@ -39,17 +37,13 @@ class AdManager(private val context: Context) {
         // Exemple : "Use RequestConfiguration.Builder().setTestDeviceIds(Arrays.asList("ABCDEF123456"))"
         // Colle ici l'ID que tu vois dans tes logs
         private val TEST_DEVICE_IDS = listOf(
-            AdRequest.DEVICE_ID_EMULATOR   // ← ID automatique pour tous les émulateurs
+            AdRequest.DEVICE_ID_EMULATOR
         )
     }
 
-    // ─────────────────────────────────────────────────────────────
-    // Appelle depuis MainActivity.onCreate AVANT setContent
-    // ─────────────────────────────────────────────────────────────
     fun initAndShowAppOpen(activity: Activity) {
         Log.d(TAG, "1️⃣ init AdMob…")
 
-        // ── Forcer le mode test sur émulateur ─────────────────────
         val config = RequestConfiguration.Builder()
             .setTestDeviceIds(TEST_DEVICE_IDS)
             .build()
