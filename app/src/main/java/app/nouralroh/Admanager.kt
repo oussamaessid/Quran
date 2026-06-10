@@ -18,11 +18,21 @@ class AdManager(private val context: Context) {
     private var appOpenAd: AppOpenAd? = null
     private var interstitialAd: InterstitialAd? = null
     private var navCount = 0
+    private var lastInterShowMs = 0L
 
     companion object {
         private const val TAG = "AdManager"
 
+        // IMPORTANT : mettre TEST = true sur votre propre appareil pendant les tests
+        // pour éviter tout clic accidentel sur de vraies annonces (trafic invalide).
         private const val TEST = false
+
+        // Délai minimum entre deux interstitiels : 60 secondes
+        private const val MIN_INTER_INTERVAL_MS = 60_000L
+
+        // Délai minimum entre deux App Open Ads : 4 heures
+        private const val MIN_APP_OPEN_INTERVAL_MS = 4 * 60 * 60 * 1_000L
+        private const val PREF_LAST_APP_OPEN_MS = "last_app_open_ms"
 
         val APP_OPEN_ID: String
             get() = if (TEST) "ca-app-pub-3940256099942544/9257395921"
@@ -32,12 +42,11 @@ class AdManager(private val context: Context) {
             get() = if (TEST) "ca-app-pub-3940256099942544/1033173712"
             else       "ca-app-pub-2498267529185476/7763292177"
 
-        // ── ID de l'émulateur/appareil de test ────────────────────
-        // Récupère cet ID dans Logcat en cherchant "Use RequestConfiguration"
-        // Exemple : "Use RequestConfiguration.Builder().setTestDeviceIds(Arrays.asList("ABCDEF123456"))"
-        // Colle ici l'ID que tu vois dans tes logs
+        // Ajoutez l'ID de votre vrai téléphone ici (trouvez-le dans Logcat :
+        // "Use RequestConfiguration.Builder().setTestDeviceIds(Arrays.asList("VOTRE_ID"))")
         private val TEST_DEVICE_IDS = listOf(
             AdRequest.DEVICE_ID_EMULATOR
+            // "VOTRE_ID_APPAREIL_LOGCAT"
         )
     }
 
@@ -50,9 +59,25 @@ class AdManager(private val context: Context) {
         MobileAds.setRequestConfiguration(config)
 
         MobileAds.initialize(context) {
-            Log.d(TAG, "2️⃣ AdMob prêt → load App Open")
-            loadAppOpen(activity)
+            Log.d(TAG, "2️⃣ AdMob prêt → vérification cooldown App Open")
+            if (canShowAppOpen()) {
+                loadAppOpen(activity)
+            } else {
+                Log.d(TAG, "⏱️ Cooldown App Open actif → loadInter")
+                loadInter()
+            }
         }
+    }
+
+    private fun canShowAppOpen(): Boolean {
+        val prefs = context.getSharedPreferences("ad_prefs", Context.MODE_PRIVATE)
+        val last = prefs.getLong(PREF_LAST_APP_OPEN_MS, 0L)
+        return System.currentTimeMillis() - last >= MIN_APP_OPEN_INTERVAL_MS
+    }
+
+    private fun recordAppOpenShown() {
+        context.getSharedPreferences("ad_prefs", Context.MODE_PRIVATE)
+            .edit().putLong(PREF_LAST_APP_OPEN_MS, System.currentTimeMillis()).apply()
     }
 
     private fun loadAppOpen(activity: Activity) {
@@ -80,6 +105,7 @@ class AdManager(private val context: Context) {
         ad.fullScreenContentCallback = object : FullScreenContentCallback() {
             override fun onAdShowedFullScreenContent() {
                 Log.d(TAG, "✅ App Open affichée")
+                recordAppOpenShown()
             }
             override fun onAdDismissedFullScreenContent() {
                 Log.d(TAG, "4️⃣ App Open fermée → loadInter")
@@ -119,11 +145,16 @@ class AdManager(private val context: Context) {
         navCount++
         Log.d(TAG, "🔢 Navigation #$navCount")
         val ad = interstitialAd
-        if (navCount % 3 == 0 && ad != null) {
+        val now = System.currentTimeMillis()
+        val canShow = navCount % 3 == 0
+                && ad != null
+                && now - lastInterShowMs >= MIN_INTER_INTERVAL_MS
+        if (canShow) {
             Log.d(TAG, "🎬 Affichage Interstitial…")
-            ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+            ad!!.fullScreenContentCallback = object : FullScreenContentCallback() {
                 override fun onAdShowedFullScreenContent() {
                     Log.d(TAG, "✅ Interstitial affichée")
+                    lastInterShowMs = System.currentTimeMillis()
                 }
                 override fun onAdDismissedFullScreenContent() {
                     Log.d(TAG, "✅ Interstitial fermée → navigate")
