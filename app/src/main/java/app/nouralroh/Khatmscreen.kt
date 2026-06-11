@@ -1,5 +1,6 @@
 package app.nouralroh
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -38,6 +39,10 @@ fun KhatmScreen(
 ) {
     val plan       by khatmVm.plan.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()
+
+    BackHandler {
+        onBack()
+    }
 
     Box(Modifier.fillMaxSize().background(QuranColors.Panel)) {
         DecorativeBackground()

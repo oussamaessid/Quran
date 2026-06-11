@@ -1,5 +1,6 @@
 package app.nouralroh
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
@@ -74,6 +75,10 @@ fun AudioScreen(
                     it.translatedName.contains(surahSearchQuery, ignoreCase = true) ||
                     it.id.toString() == surahSearchQuery.trim()
         }
+    }
+
+    BackHandler {
+        onBack()
     }
 
     Box(Modifier.fillMaxSize().background(QuranColors.Panel)) {
