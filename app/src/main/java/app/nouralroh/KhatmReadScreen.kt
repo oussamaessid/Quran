@@ -239,11 +239,13 @@ fun KhatmMushafPageContent(
         audioHighlight    = null,
         showAudioSheet    = false,
         audioChoiceMade   = false,
-        showSurahAudioBar = false,
-        pageNumber        = pageNumber,
-        surahName         = "",
-        vm                = quranVm,
-        onAyahSelected    = {},
-        onDismissAudio    = {}
+        showSurahAudioBar  = false,
+        savedAyahKeys      = emptySet(),
+        fontSizeMultiplier = 1.0f,
+        pageNumber         = pageNumber,
+        surahName          = "",
+        vm                 = quranVm,
+        onAyahSelected     = {},
+        onDismissAudio     = {}
     )
 }

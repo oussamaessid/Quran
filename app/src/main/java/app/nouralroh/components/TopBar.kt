@@ -21,10 +21,10 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
-import androidx.compose.material.icons.filled.FormatListBulleted
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -59,6 +59,9 @@ fun TopBar(
     currentIndex     : Int,
     chapters         : List<Chapter>,
     savedCount       : Int = 0,
+    fontSizeMultiplier: Float    = 1.0f,
+    onFontIncrease   : () -> Unit = {},
+    onFontDecrease   : () -> Unit = {},
     onShowIndex      : () -> Unit,
     onShowAudioPicker: () -> Unit,
     onShowSaved      : () -> Unit,
@@ -104,7 +107,7 @@ fun TopBar(
                 .clickable { onBack() },
             contentAlignment = Alignment.Center
         ) {
-            Icon(Icons.Default.ArrowBack, contentDescription = null,
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null,
                 tint = QuranColors.GoldBright, modifier = Modifier.size(iconSize))
         }
 
@@ -164,10 +167,42 @@ fun TopBar(
                 )
             }
 
-//            if (!isLandscape) {
-//                Spacer(Modifier.height(3.dp))
-//                PageIndicatorDots(currentIndex, QuranViewModel.TOTAL_PAGES)
-//            }
+            if (!isLandscape) {
+                Row(
+                    modifier = Modifier.padding(top = 3.dp),
+                    horizontalArrangement = Arrangement.spacedBy(5.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        Modifier
+                            .size(btnSize * 0.65f)
+                            .clip(RoundedCornerShape(5.dp))
+                            .background(QuranColors.AppBg)
+                            .border(1.dp, QuranColors.PanelBorder, RoundedCornerShape(5.dp))
+                            .clickable { onFontDecrease() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("A−", fontSize = 9.sp, color = QuranColors.GoldDim,
+                            fontWeight = FontWeight.Bold)
+                    }
+                    Text(
+                        "${(fontSizeMultiplier * 100).toInt()}%",
+                        fontSize = 8.sp, color = QuranColors.TextMuted
+                    )
+                    Box(
+                        Modifier
+                            .size(btnSize * 0.65f)
+                            .clip(RoundedCornerShape(5.dp))
+                            .background(QuranColors.AppBg)
+                            .border(1.dp, QuranColors.PanelBorder, RoundedCornerShape(5.dp))
+                            .clickable { onFontIncrease() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("A+", fontSize = 9.sp, color = QuranColors.GoldBright,
+                            fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
         }
 
         Row(
@@ -219,7 +254,7 @@ fun TopBar(
                     .clickable { onShowIndex() },
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.FormatListBulleted, contentDescription = null,
+                Icon(Icons.AutoMirrored.Filled.FormatListBulleted, contentDescription = null,
                     tint = QuranColors.GoldBright, modifier = Modifier.size(iconSize))
             }
         }

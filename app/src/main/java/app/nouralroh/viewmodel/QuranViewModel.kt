@@ -28,6 +28,8 @@ import kotlinx.coroutines.flow.*
 
 class QuranViewModel(application: Application) : AndroidViewModel(application) {
 
+    private val prefs = application.getSharedPreferences("quran_prefs", Context.MODE_PRIVATE)
+
     companion object {
         const val TOTAL_PAGES             = 606
         private const val PREFETCH_RADIUS = 2
@@ -57,6 +59,30 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
     val showTranslation: StateFlow<Boolean> = _showTranslation.asStateFlow()
 
     val savedAyahs: StateFlow<List<SavedAyah>> = savedRepo.saved
+
+    // ── Saved ayah navigate highlight (color only, no audio bar) ─────────────
+    private val _highlightedSavedKey = MutableStateFlow<String?>(null)
+    val highlightedSavedKey: StateFlow<String?> = _highlightedSavedKey.asStateFlow()
+
+    fun highlightSavedAyah(verseKey: String) {
+        _highlightedSavedKey.value = verseKey
+    }
+
+    // ── Font size ─────────────────────────────────────────────────────────────
+    private val _fontSizeMultiplier = MutableStateFlow(1.0f)
+    val fontSizeMultiplier: StateFlow<Float> = _fontSizeMultiplier.asStateFlow()
+
+    fun increaseFontSize() {
+        val new = (_fontSizeMultiplier.value + 0.1f).coerceAtMost(1.6f)
+        _fontSizeMultiplier.value = new
+        prefs.edit().putFloat("font_size_mult", new).apply()
+    }
+
+    fun decreaseFontSize() {
+        val new = (_fontSizeMultiplier.value - 0.1f).coerceAtLeast(0.6f)
+        _fontSizeMultiplier.value = new
+        prefs.edit().putFloat("font_size_mult", new).apply()
+    }
 
     fun toggleSaveAyah(verseKey: String, surahName: String, pageNumber: Int) =
         savedRepo.toggle(verseKey, surahName, pageNumber)
@@ -121,6 +147,7 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
     // ── Init ──────────────────────────────────────────────────────────────────
     init {
         audioPlayer.onCompletion = { handleAudioCompletion() }
+        _fontSizeMultiplier.value = prefs.getFloat("font_size_mult", 1.0f)
 
         val lastPage = LastPageRepository.load(application)
         if (lastPage > 1) {
@@ -305,11 +332,12 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
                 (_showAudioSheet.value && _audioChoiceMade.value)
 
         if (!audioIsActive) {
-            _selectedAyahKey.value = null
-            _showAudioSheet.value  = false
-            _audioChoiceMade.value = false
-            _previousAyahKey       = null
+            _selectedAyahKey.value     = null
+            _showAudioSheet.value      = false
+            _audioChoiceMade.value     = false
+            _previousAyahKey           = null
         }
+        _highlightedSavedKey.value = null
 
         viewModelScope.launch { loadPagesAround(zeroBasedIndex + 1) }
     }
@@ -361,6 +389,7 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
 
     // ── Ayah tap ──────────────────────────────────────────────────────────────
     fun selectAyah(verseKey: String?) {
+        _highlightedSavedKey.value = null
         if (_showSurahAudioBar.value) {
             _showSurahAudioBar.value = false
             stopAudio()

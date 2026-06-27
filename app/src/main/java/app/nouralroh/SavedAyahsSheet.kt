@@ -30,7 +30,7 @@ import java.util.*
 @Composable
 fun SavedAyahsSheet(
     savedAyahs: List<SavedAyah>,
-    onNavigate: (Int) -> Unit,
+    onNavigate: (Int, String) -> Unit,
     onRemove  : (String) -> Unit,
     onDismiss : () -> Unit
 ) {
@@ -113,7 +113,7 @@ fun SavedAyahsSheet(
                         SavedAyahRow(
                             ayah       = ayah,
                             dateFormat = dateFormat,
-                            onNavigate = { onNavigate(ayah.pageNumber); onDismiss() },
+                            onNavigate = { onNavigate(ayah.pageNumber, ayah.verseKey); onDismiss() },
                             onRemove   = { onRemove(ayah.verseKey) }
                         )
                         HorizontalDivider(

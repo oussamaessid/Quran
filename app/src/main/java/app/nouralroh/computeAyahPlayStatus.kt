@@ -105,9 +105,11 @@ fun FlowingMushafText(
     chapters        : List<Chapter>,
     showTranslation : Boolean,
     selectedAyahKey : String?,
-    audioHighlight  : Pair<String, Int>?,
-    audioActive     : Boolean,
-    wordPositionMap : Map<Int, Int>,
+    audioHighlight      : Pair<String, Int>?,
+    audioActive         : Boolean,
+    savedAyahKeys       : Set<String> = emptySet(),
+    highlightedSavedKey : String?     = null,
+    wordPositionMap     : Map<Int, Int>,
     fontSize        : TextUnit,
     onAyahSelected  : (String?) -> Unit,
     modifier        : Modifier = Modifier
@@ -446,7 +448,9 @@ fun FlowingMushafText(
                                 isAyah       = isAyah,
                                 isAudioWord  = isAudioW,
                                 ayahStatus   = status,
-                                onClick      = { onAyahSelected(verseKey) }
+                                isSaved            = verseKey in savedAyahKeys,
+                                isHighlightedSaved = verseKey == highlightedSavedKey,
+                                onClick            = { onAyahSelected(verseKey) }
                             )
                         }.first().measure(
                             androidx.compose.ui.unit.Constraints(

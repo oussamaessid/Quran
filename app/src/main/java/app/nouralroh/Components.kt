@@ -233,6 +233,8 @@ fun MushafLine(
     selectedAyahKey     : String?,
     audioHighlight      : Pair<String, Int>? = null,
     audioActive         : Boolean            = false,
+    savedAyahKeys       : Set<String>        = emptySet(),
+    highlightedSavedKey : String?            = null,
     surahColoringEnabled: Boolean            = false,
     centered            : Boolean            = false,
     pageFont            : FontFamily         = QuranFonts.AmiriQuran,
@@ -300,7 +302,9 @@ fun MushafLine(
                     isAyah       = isAyah,
                     isAudioWord  = isAudioWord,
                     ayahStatus   = ayahStatus,
-                    pageFont     = pageFont,
+                    isSaved           = verseKey in savedAyahKeys,
+                    isHighlightedSaved = verseKey == highlightedSavedKey,
+                    pageFont          = pageFont,
                     onClick      = { onAyahSelected(verseKey) }
                 )
             }.first().measure(
@@ -343,7 +347,9 @@ fun WordChip(
     isAyah      : Boolean        = false,
     isAudioWord : Boolean        = false,
     ayahStatus  : AyahPlayStatus = AyahPlayStatus.NORMAL,
-    pageFont    : FontFamily     = QuranFonts.AmiriQuran,
+    isSaved            : Boolean        = false,
+    isHighlightedSaved : Boolean        = false,
+    pageFont           : FontFamily     = QuranFonts.AmiriQuran,
     onClick     : (() -> Unit)?  = null
 ) {
     val isEnd        = word.charTypeName == "end"
@@ -353,7 +359,9 @@ fun WordChip(
     val textColor: Color = when {
         isAudioWord                          -> QuranColors.GoldWarm
         isEnd                                -> QuranColors.VerseEndColor
+        isAyah && isSaved                    -> QuranColors.GoldBlaze
         isAyah                               -> QuranColors.Gold.copy(alpha = 0.75f)
+        isHighlightedSaved                   -> QuranColors.Gold.copy(alpha = 0.75f)
         ayahStatus == AyahPlayStatus.CURRENT -> QuranColors.ArabicText.copy(alpha = 0.22f)
         ayahStatus == AyahPlayStatus.PAST    -> QuranColors.ArabicText.copy(alpha = 0.75f)
         ayahStatus == AyahPlayStatus.FUTURE  -> QuranColors.ArabicText

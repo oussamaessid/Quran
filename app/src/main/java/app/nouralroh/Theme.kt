@@ -60,4 +60,7 @@ object QuranColors {
     val MadaniText   = GoldAccent           // Or pâle — distinction douce
     val MadaniBg     = Color(0xFF160E00)    // Fond or encore plus sombre
     val MadaniBorder = Color(0xFF4A3008)    // Bordure or sombre
+
+    // ── Saved Ayah ────────────────────────────────────────────────────────────
+    val SavedAyahColor = Color(0xFF1B7A4A)  // Émeraude — ayah sauvegardé (sur fond ivoire)
 }

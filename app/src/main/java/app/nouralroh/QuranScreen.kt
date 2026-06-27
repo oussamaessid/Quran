@@ -105,12 +105,26 @@ fun QuranScreen(
     val currentSurahId by vm.currentAudioSurahId.collectAsStateWithLifecycle()
     val navigateToPage by vm.navigateToPageIndex.collectAsStateWithLifecycle()
     val savedAyahs by vm.savedAyahs.collectAsStateWithLifecycle()
+    val fontSizeMultiplier by vm.fontSizeMultiplier.collectAsStateWithLifecycle()
+    val savedAyahKeys = remember(savedAyahs) { savedAyahs.map { it.verseKey }.toSet() }
     val view = LocalView.current
     val audioIsActive = showSurahAudioBar || (showAudioSheet && audioChoiceMade)
     val noNetworkMessage by vm.noNetworkMessage.collectAsStateWithLifecycle()
     var showIndex by remember { mutableStateOf(false) }
     var showSurahPicker by remember { mutableStateOf(false) }
     var showSaved by remember { mutableStateOf(false) }
+
+    var savedHighlightKey  by remember { mutableStateOf<String?>(null) }
+    var savedHighlightPage by remember { mutableStateOf(-1) }
+
+    LaunchedEffect(currentIndex) {
+        val key = savedHighlightKey
+        if (key != null && currentIndex == savedHighlightPage) {
+            savedHighlightKey  = null
+            savedHighlightPage = -1
+            vm.highlightSavedAyah(key)
+        }
+    }
 
     LaunchedEffect(audioIsActive) {
         view.keepScreenOn = audioIsActive
@@ -180,6 +194,9 @@ fun QuranScreen(
                                 currentIndex = currentIndex,
                                 chapters = chapters,
                                 savedCount = savedAyahs.size,
+                                fontSizeMultiplier = fontSizeMultiplier,
+                                onFontIncrease = { vm.increaseFontSize() },
+                                onFontDecrease = { vm.decreaseFontSize() },
                                 onShowIndex = { showIndex = true },
                                 onShowAudioPicker = { showSurahPicker = true },
                                 onShowSaved = { showSaved = true },
@@ -202,6 +219,8 @@ fun QuranScreen(
                         pageNumber = pageNumber,
                         surahName = surahName,
                         showIndex = showIndex,
+                        savedAyahKeys = savedAyahKeys,
+                        fontSizeMultiplier = fontSizeMultiplier,
                         vm = vm,
                         modifier = Modifier.weight(1f),
                         onPageChanged = { vm.onPageChanged(it) },
@@ -232,7 +251,17 @@ fun QuranScreen(
     if (showSaved) {
         SavedAyahsSheet(
             savedAyahs = savedAyahs,
-            onNavigate = { page -> vm.navigateToPage(page - 1) },
+            onNavigate = { page, verseKey ->
+                val zeroPage = page - 1
+                showSaved = false
+                if (currentIndex == zeroPage) {
+                    vm.highlightSavedAyah(verseKey)
+                } else {
+                    savedHighlightKey  = verseKey
+                    savedHighlightPage = zeroPage
+                    vm.navigateToPage(zeroPage)
+                }
+            },
             onRemove = { verseKey -> vm.removeSavedAyah(verseKey) },
             onDismiss = { showSaved = false })
     }
@@ -618,6 +647,8 @@ fun MushafPager(
     pageNumber: Int,
     surahName: String,
     showIndex: Boolean,
+    savedAyahKeys: Set<String>,
+    fontSizeMultiplier: Float,
     vm: QuranViewModel,
     modifier: Modifier,
     onPageChanged: (Int) -> Unit,
@@ -697,12 +728,14 @@ fun MushafPager(
                                 audioHighlight    = audioHighlight,
                                 showAudioSheet    = showAudioSheet,
                                 audioChoiceMade   = audioChoiceMade,
-                                showSurahAudioBar = showSurahAudioBar,
-                                pageNumber        = pageNumber,
-                                surahName         = surahName,
-                                vm                = vm,
-                                onAyahSelected    = onAyahSelected,
-                                onDismissAudio    = onDismissAudio
+                                showSurahAudioBar  = showSurahAudioBar,
+                                savedAyahKeys      = savedAyahKeys,
+                                fontSizeMultiplier = fontSizeMultiplier,
+                                pageNumber         = pageNumber,
+                                surahName          = surahName,
+                                vm                 = vm,
+                                onAyahSelected     = onAyahSelected,
+                                onDismissAudio     = onDismissAudio
                             )
                         }
                     }
@@ -735,6 +768,8 @@ fun MushafPageContent(
     showAudioSheet: Boolean,
     audioChoiceMade: Boolean,
     showSurahAudioBar: Boolean,
+    savedAyahKeys: Set<String>,
+    fontSizeMultiplier: Float,
     pageNumber: Int,
     surahName: String,
     vm: QuranViewModel,
@@ -745,7 +780,8 @@ fun MushafPageContent(
     val isShortPage = quranPage.pageNumber <= 2
     val audioActive = audioChoiceMade || showSurahAudioBar
     val density = LocalDensity.current
-    val isAyahPlusMode by vm.isAyahPlusMode.collectAsStateWithLifecycle()
+    val isAyahPlusMode       by vm.isAyahPlusMode.collectAsStateWithLifecycle()
+    val highlightedSavedKey  by vm.highlightedSavedKey.collectAsStateWithLifecycle()
 
     val allWords = remember(quranPage) {
         quranPage.verses.flatMap { verse ->
@@ -803,7 +839,7 @@ fun MushafPageContent(
 
         if (!isCenteredPage) {
             val extraPadH = maxWidth * 0.016f
-            val flowFontSp = (maxWidth.value * 0.05f).sp
+            val flowFontSp = (maxWidth.value * 0.05f * fontSizeMultiplier).sp
 
             Column(
                 Modifier
@@ -824,6 +860,8 @@ fun MushafPageContent(
                         selectedAyahKey = selectedAyahKey,
                         audioHighlight = audioHighlight,
                         audioActive = audioActive,
+                        savedAyahKeys = savedAyahKeys,
+                        highlightedSavedKey = highlightedSavedKey,
                         wordPositionMap = wordPositionMap,
                         fontSize = flowFontSp,
                         onAyahSelected = onAyahSelected,
@@ -858,7 +896,7 @@ fun MushafPageContent(
 
         val maxWidthDp = maxWidth
         val maxWidthValue = maxWidth.value
-        val fontSize = (maxWidthValue * 0.052f).sp
+        val fontSize = (maxWidthValue * 0.052f * fontSizeMultiplier).sp
         val numLines = lineMap.size.coerceAtLeast(1)
         val nHeaders = surahStartAtLine.size
         val nBismillah = surahStartAtLine.values.count { it.bismillahPre && it.id != 9 && it.id != 1 }
@@ -938,8 +976,10 @@ fun MushafPageContent(
                         audioHighlight  = audioHighlight,
                         audioActive     = audioActive,
                         surahColoringEnabled = showSurahAudioBar || (audioActive && !isAyahPlusMode),
-                        centered        = true,
-                        onAyahSelected  = onAyahSelected
+                        centered             = true,
+                        savedAyahKeys        = savedAyahKeys,
+                        highlightedSavedKey  = highlightedSavedKey,
+                        onAyahSelected       = onAyahSelected
                     )
                 }
 
@@ -998,7 +1038,20 @@ fun MushafPageContent(
 
 @Composable
 fun PageTopStrip(quranPage: QuranPage, height: Dp) {
-    Column(Modifier.fillMaxWidth().height(height)) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .height(height)
+            .drawBehind {
+                val gold = QuranColors.Gold.copy(alpha = 0.50f)
+                val len  = (size.height * 0.55f).coerceAtLeast(4f)
+                val th   = 1.dp.toPx()
+                drawLine(gold, Offset(0f, 0f),         Offset(len, 0f),              th)
+                drawLine(gold, Offset(0f, 0f),         Offset(0f, len),              th)
+                drawLine(gold, Offset(size.width, 0f), Offset(size.width - len, 0f), th)
+                drawLine(gold, Offset(size.width, 0f), Offset(size.width, len),      th)
+            }
+    ) {
         Row(
             Modifier.fillMaxWidth().weight(1f),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -1006,6 +1059,7 @@ fun PageTopStrip(quranPage: QuranPage, height: Dp) {
         ) {
             Text("Juz ${quranPage.juzNumber}", fontSize = 12.sp, color = QuranColors.GoldDim,
                 style = TextStyle(textDirection = TextDirection.Rtl))
+            Text("✦", fontSize = 6.sp, color = QuranColors.Gold.copy(alpha = 0.45f))
             Text("Hizb ${quranPage.hizbNumber}", fontSize = 12.sp, color = QuranColors.GoldDim,
                 fontWeight = FontWeight.SemiBold, style = TextStyle(textDirection = TextDirection.Rtl))
         }
