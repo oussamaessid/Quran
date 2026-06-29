@@ -24,12 +24,17 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.util.Locale
 
-private const val DEFAULT_LAT  = 21.3891
-private const val DEFAULT_LON  = 39.8579
-private const val DEFAULT_CITY = "مكة المكرمة"
+private const val DEFAULT_LAT  = 36.8065   // Tunis (1ère ouverture)
+private const val DEFAULT_LON  = 10.1815
+private const val DEFAULT_CITY = "تونس"
 
-
-private const val CALCULATION_METHOD = 3   // ← Changer selon votre région
+// Paramètres AlAdhan pour la Tunisie :
+//   method=99  → méthode personnalisée
+//   methodSettings=18,null,18  → Fajr 18°, Isha 18° (officiel Tunisie)
+//   school=0   → Maliki/Shafi pour Asr (ombre × 1)
+private const val ALADHAN_URL_TEMPLATE =
+    "https://api.aladhan.com/v1/timings?latitude=%s&longitude=%s" +
+    "&method=99&methodSettings=18,null,18&school=0"
 
 data class PrayerTimes(
     val fajr      : String,
@@ -51,6 +56,12 @@ private const val KEY_LAT    = "last_lat"
 private const val KEY_LON    = "last_lon"
 private const val KEY_CITY   = "last_city"
 private const val NO_VAL     = Float.MAX_VALUE
+
+private val HIJRI_MONTHS_AR = listOf(
+    "مُحَرَّم", "صَفَر", "رَبيع الأوَّل", "رَبيع الثاني",
+    "جُمادى الأولى", "جُمادى الآخرة", "رَجَب", "شَعبان",
+    "رَمَضان", "شَوَّال", "ذو القَعدة", "ذو الحِجَّة"
+)
 
 class PrayerTimesViewModel(app: Application) : AndroidViewModel(app) {
 
@@ -74,49 +85,35 @@ class PrayerTimesViewModel(app: Application) : AndroidViewModel(app) {
     private var locationCallback: LocationCallback? = null
 
     init {
-        viewModelScope.launch {
-            fetchTimings(savedLatitude, savedLongitude)
-        }
+        viewModelScope.launch { fetchTimings(savedLatitude, savedLongitude) }
     }
 
     @SuppressLint("MissingPermission")
     fun loadPrayerTimes() {
-        if (_state.value !is UiState.Success) {
-            _state.value = UiState.Loading
-        }
-
+        if (_state.value !is UiState.Success) _state.value = UiState.Loading
         viewModelScope.launch {
             try {
                 val cts = CancellationTokenSource()
                 val loc = fusedClient
                     .getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, cts.token)
                     .await()
-
                 if (loc != null) {
-                    val changed = isSignificantlyDifferent(loc.latitude, loc.longitude)
-                    if (changed) {
+                    if (isSignificantlyDifferent(loc.latitude, loc.longitude)) {
                         savePosition(loc.latitude, loc.longitude)
                         fetchTimings(loc.latitude, loc.longitude)
                     }
                     startLocationUpdates()
                 } else {
                     val last = fusedClient.lastLocation.await()
-                    if (last != null) {
-                        val changed = isSignificantlyDifferent(last.latitude, last.longitude)
-                        if (changed) {
-                            savePosition(last.latitude, last.longitude)
-                            fetchTimings(last.latitude, last.longitude)
-                        }
-                        startLocationUpdates()
+                    if (last != null && isSignificantlyDifferent(last.latitude, last.longitude)) {
+                        savePosition(last.latitude, last.longitude)
+                        fetchTimings(last.latitude, last.longitude)
                     }
-                    if (_state.value !is UiState.Success) {
-                        fetchTimings(savedLatitude, savedLongitude)
-                    }
+                    startLocationUpdates()
+                    if (_state.value !is UiState.Success) fetchTimings(savedLatitude, savedLongitude)
                 }
-            } catch (e: Exception) {
-                if (_state.value !is UiState.Success) {
-                    fetchTimings(savedLatitude, savedLongitude)
-                }
+            } catch (_: Exception) {
+                if (_state.value !is UiState.Success) fetchTimings(savedLatitude, savedLongitude)
             }
         }
     }
@@ -131,14 +128,9 @@ class PrayerTimesViewModel(app: Application) : AndroidViewModel(app) {
     @SuppressLint("MissingPermission")
     private fun startLocationUpdates() {
         locationCallback?.let { fusedClient.removeLocationUpdates(it) }
-
         val request = LocationRequest.Builder(
-            Priority.PRIORITY_BALANCED_POWER_ACCURACY,
-            10 * 60 * 1000L
-        ).apply {
-            setMinUpdateDistanceMeters(500f)
-            setWaitForAccurateLocation(false)
-        }.build()
+            Priority.PRIORITY_BALANCED_POWER_ACCURACY, 10 * 60 * 1000L
+        ).setMinUpdateDistanceMeters(500f).setWaitForAccurateLocation(false).build()
 
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(result: LocationResult) {
@@ -153,25 +145,21 @@ class PrayerTimesViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun savePosition(lat: Double, lon: Double) {
-        prefs.edit()
-            .putFloat(KEY_LAT, lat.toFloat())
-            .putFloat(KEY_LON, lon.toFloat())
-            .apply()
+        prefs.edit().putFloat(KEY_LAT, lat.toFloat()).putFloat(KEY_LON, lon.toFloat()).apply()
     }
 
     private suspend fun fetchTimings(lat: Double, lon: Double) {
         try {
             val pt = withContext(Dispatchers.IO) { callAladhan(lat, lon) }
             _state.value = UiState.Success(pt)
-        } catch (e: Exception) {
-            if (_state.value !is UiState.Success) {
+        } catch (_: Exception) {
+            if (_state.value !is UiState.Success)
                 _state.value = UiState.Error("Pas de connexion réseau")
-            }
         }
     }
 
     private fun callAladhan(lat: Double, lon: Double): PrayerTimes {
-        val url  = URL("https://api.aladhan.com/v1/timings?latitude=$lat&longitude=$lon&method=$CALCULATION_METHOD")
+        val url  = URL(ALADHAN_URL_TEMPLATE.format(lat, lon))
         val conn = (url.openConnection() as HttpURLConnection).apply {
             connectTimeout = 12_000
             readTimeout    = 12_000
@@ -184,16 +172,14 @@ class PrayerTimesViewModel(app: Application) : AndroidViewModel(app) {
         }
 
         val root = JSONObject(body)
-        check(root.optString("code") == "200") { "API returned error" }
+        check(root.optString("code") == "200") { "API error" }
 
         val data    = root.getJSONObject("data")
         val timings = data.getJSONObject("timings")
         val hijri   = data.getJSONObject("date").getJSONObject("hijri")
 
         fun t(key: String) = timings.getString(key).trim()
-            .substringBefore(" (")
-            .substringBefore(" ")
-            .take(5)
+            .substringBefore(" (").substringBefore(" ").take(5)
 
         val fajr    = t("Fajr")
         val sunrise = t("Sunrise")
@@ -203,9 +189,8 @@ class PrayerTimesViewModel(app: Application) : AndroidViewModel(app) {
         val isha    = t("Isha")
 
         val city = try {
-            if (lat == DEFAULT_LAT && lon == DEFAULT_LON) {
-                DEFAULT_CITY
-            } else {
+            if (lat == DEFAULT_LAT && lon == DEFAULT_LON) DEFAULT_CITY
+            else {
                 @Suppress("DEPRECATION")
                 Geocoder(getApplication(), Locale.getDefault())
                     .getFromLocation(lat, lon, 1)
@@ -218,34 +203,32 @@ class PrayerTimesViewModel(app: Application) : AndroidViewModel(app) {
         }
         prefs.edit().putString(KEY_CITY, city).apply()
 
-        val hijriStr = "${hijri.getString("day")} " +
-                "${hijri.getJSONObject("month").getString("en")} " +
-                "${hijri.getString("year")} H"
+        // Date Hijri avec noms des mois en arabe
+        val hijriMonth = hijri.getJSONObject("month")
+        val monthNum   = hijriMonth.optInt("number", 1).coerceIn(1, 12)
+        val hijriStr   = "${hijri.getString("day")} " +
+                         "${HIJRI_MONTHS_AR[monthNum - 1]} " +
+                         "${hijri.getString("year")} هـ"
 
-        val (next, nextT) = computeNext(
-            listOf(
-                "Fajr"    to fajr,
-                "Dhuhr"   to dhuhr,
-                "Asr"     to asr,
-                "Maghrib" to maghrib,
-                "Isha"    to isha
-                // "Sunrise" retiré intentionnellement
-            )
-        )
+        val (next, nextT) = computeNext(listOf(
+            "Fajr" to fajr, "Dhuhr" to dhuhr, "Asr" to asr,
+            "Maghrib" to maghrib, "Isha" to isha
+        ))
 
-        return PrayerTimes(fajr, sunrise, dhuhr, asr, maghrib, isha, next, nextT, city, hijriStr, lat, lon)
+        return PrayerTimes(fajr, sunrise, dhuhr, asr, maghrib, isha,
+                           next, nextT, city, hijriStr, lat, lon)
     }
 
     private fun computeNext(prayers: List<Pair<String, String>>): Pair<String, String> {
         val cal    = java.util.Calendar.getInstance()
-        val nowMin = cal.get(java.util.Calendar.HOUR_OF_DAY) * 60 + cal.get(java.util.Calendar.MINUTE)
+        val nowMin = cal.get(java.util.Calendar.HOUR_OF_DAY) * 60 +
+                     cal.get(java.util.Calendar.MINUTE)
         for ((name, time) in prayers) {
             val parts = time.split(":")
             val min   = (parts.getOrNull(0)?.toIntOrNull() ?: 0) * 60 +
-                    (parts.getOrNull(1)?.toIntOrNull() ?: 0)
+                        (parts.getOrNull(1)?.toIntOrNull() ?: 0)
             if (min > nowMin) return name to time
         }
-        // Après Isha → prochaine est Fajr (lendemain)
         return prayers.first()
     }
 
