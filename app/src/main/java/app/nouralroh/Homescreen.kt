@@ -65,6 +65,7 @@ fun HomeScreen(
     val isLandscape   = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
     val locationReady = permissionGranted && gpsEnabled
 
+    LaunchedEffect(Unit)              { prayerVm.refreshNextPrayer() }
     LaunchedEffect(locationReady)     { if (locationReady)      prayerVm.loadPrayerTimes() }
     LaunchedEffect(permissionGranted) { if (!permissionGranted) onRequestPermission() }
 

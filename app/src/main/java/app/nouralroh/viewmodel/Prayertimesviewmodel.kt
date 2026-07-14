@@ -88,6 +88,19 @@ class PrayerTimesViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch { fetchTimings(savedLatitude, savedLongitude) }
     }
 
+    // Recalcule la prochaine prière depuis l'heure actuelle sans refaire d'appel réseau.
+    // À appeler à chaque ouverture de l'écran d'accueil.
+    fun refreshNextPrayer() {
+        val current = (_state.value as? UiState.Success)?.data ?: return
+        val (next, nextT) = computeNext(listOf(
+            "Fajr" to current.fajr, "Dhuhr" to current.dhuhr, "Asr" to current.asr,
+            "Maghrib" to current.maghrib, "Isha" to current.isha
+        ))
+        if (next != current.nextPrayer || nextT != current.nextTime) {
+            _state.value = UiState.Success(current.copy(nextPrayer = next, nextTime = nextT))
+        }
+    }
+
     @SuppressLint("MissingPermission")
     fun loadPrayerTimes() {
         if (_state.value !is UiState.Success) _state.value = UiState.Loading
