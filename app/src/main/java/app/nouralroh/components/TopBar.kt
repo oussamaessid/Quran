@@ -5,7 +5,6 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,12 +13,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
@@ -28,23 +23,13 @@ import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.nouralroh.QuranColors
@@ -63,9 +48,9 @@ fun TopBar(
     onFontIncrease   : () -> Unit = {},
     onFontDecrease   : () -> Unit = {},
     onShowIndex      : () -> Unit,
+    onShowPageJump   : () -> Unit,
     onShowAudioPicker: () -> Unit,
     onShowSaved      : () -> Unit,
-    onGoToPage       : (Int) -> Unit,
     onBack           : () -> Unit
 ) {
     val configuration = LocalConfiguration.current
@@ -84,10 +69,6 @@ fun TopBar(
     val firstSurahId = pageData?.verses?.firstOrNull()?.verseKey?.substringBefore(":")?.toIntOrNull()
     val surahName    = firstSurahId?.let { id -> chapters.find { it.id == id }?.nameSimple } ?: ""
     val nameArabic    = firstSurahId?.let { id -> chapters.find { it.id == id }?.nameArabic } ?: ""
-
-    var editingPage    by remember { mutableStateOf(false) }
-    var pageInput      by remember { mutableStateOf("") }
-    val focusRequester = remember { FocusRequester() }
 
     Row(
         Modifier
@@ -119,51 +100,26 @@ fun TopBar(
                     color     = QuranColors.TextMuted,
                     fontStyle = FontStyle.Italic)
 
-            if (editingPage) {
-                LaunchedEffect(Unit) { focusRequester.requestFocus() }
-                BasicTextField(
-                    value         = pageInput,
-                    onValueChange = { v ->
-                        if (v.all { it.isDigit() } && v.length <= 3) pageInput = v
-                    },
-                    singleLine      = true,
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Number, imeAction = ImeAction.Go),
-                    keyboardActions = KeyboardActions(onGo = {
-                        val num = pageInput.toIntOrNull()
-                        if (num != null && num in 1..QuranViewModel.TOTAL_PAGES) onGoToPage(num)
-                        editingPage = false; pageInput = ""
-                    }),
-                    textStyle = TextStyle(fontSize = 12.sp, color = QuranColors.GoldBright,
-                        fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center),
-                    decorationBox = { innerTextField ->
-                        Box(
-                            Modifier.width(80.dp).clip(RoundedCornerShape(6.dp))
-                                .background(QuranColors.AppBg)
-                                .border(1.dp, QuranColors.GoldDim, RoundedCornerShape(6.dp))
-                                .padding(horizontal = 8.dp, vertical = 4.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            if (pageInput.isEmpty()) Text("1 – ${QuranViewModel.TOTAL_PAGES}",
-                                fontSize = 9.sp, color = QuranColors.TextMuted,
-                                textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
-                            innerTextField()
-                        }
-                    },
-                    modifier = Modifier.focusRequester(focusRequester)
-                )
-            } else {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(3.dp),
+                modifier = Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(QuranColors.AppBg)
+                    .border(0.5.dp, QuranColors.PanelBorder, RoundedCornerShape(6.dp))
+                    .clickable { onShowPageJump() }
+                    .padding(horizontal = 8.dp, vertical = 3.dp)
+            ) {
                 Text(
-                    "$pageNumber / ${QuranViewModel.TOTAL_PAGES}",
-                    fontSize   = 12.sp,
+                    "$pageNumber",
+                    fontSize   = 13.sp,
                     color      = QuranColors.GoldBright,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier   = Modifier
-                        .clip(RoundedCornerShape(5.dp))
-                        .clickable(indication = null,
-                            interactionSource = remember { MutableInteractionSource() })
-                        { editingPage = true; pageInput = "" }
-                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    "/ ${QuranViewModel.TOTAL_PAGES}",
+                    fontSize = 10.sp,
+                    color    = QuranColors.TextMuted
                 )
             }
 

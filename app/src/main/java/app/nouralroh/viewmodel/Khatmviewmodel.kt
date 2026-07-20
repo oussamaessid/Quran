@@ -93,6 +93,11 @@ class KhatmViewModel(application: Application) : AndroidViewModel(application) {
         updatePlan { copy(bonusStartPage = newStart) }
     }
 
+    /** Change the daily pace of an existing plan without losing progress. */
+    fun updateUnitsPerDay(newUnitsPerDay: Int) = updatePlan {
+        copy(unitsPerDay = newUnitsPerDay.coerceIn(1, mode.maxPerDay))
+    }
+
     fun createPlan(unitsPerDay: Int) {
         persist(
             KhatmPlan(

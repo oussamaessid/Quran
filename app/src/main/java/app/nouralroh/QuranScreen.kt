@@ -44,6 +44,8 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -62,6 +64,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalConfiguration
@@ -85,8 +88,11 @@ import app.nouralroh.data.WordInLine
 import app.nouralroh.viewmodel.QuranViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.math.abs
+import kotlin.math.roundToInt
 
 private enum class TopBarState { DEFAULT, SURAH_AUDIO, AYAH_AUDIO }
+enum class IndexTab { SURAHS, PAGE }
 
 @Composable
 fun QuranScreen(
@@ -110,7 +116,7 @@ fun QuranScreen(
     val view = LocalView.current
     val audioIsActive = showSurahAudioBar || (showAudioSheet && audioChoiceMade)
     val noNetworkMessage by vm.noNetworkMessage.collectAsStateWithLifecycle()
-    var showIndex by remember { mutableStateOf(false) }
+    var indexSheetTab by remember { mutableStateOf<IndexTab?>(null) }
     var showSurahPicker by remember { mutableStateOf(false) }
     var showSaved by remember { mutableStateOf(false) }
 
@@ -142,7 +148,7 @@ fun QuranScreen(
         when {
             showSaved -> showSaved = false
             showSurahPicker -> showSurahPicker = false
-            showIndex -> showIndex = false
+            indexSheetTab != null -> indexSheetTab = null
             showSurahAudioBar -> vm.dismissSurahAudioBar()
             showAudioSheet -> vm.dismissAudioSheet()
             else -> onBack()
@@ -197,10 +203,10 @@ fun QuranScreen(
                                 fontSizeMultiplier = fontSizeMultiplier,
                                 onFontIncrease = { vm.increaseFontSize() },
                                 onFontDecrease = { vm.decreaseFontSize() },
-                                onShowIndex = { showIndex = true },
+                                onShowIndex = { indexSheetTab = IndexTab.SURAHS },
+                                onShowPageJump = { indexSheetTab = IndexTab.PAGE },
                                 onShowAudioPicker = { showSurahPicker = true },
                                 onShowSaved = { showSaved = true },
-                                onGoToPage = { page -> vm.navigateToPage(page - 1) },
                                 onBack = onBack
                             )
                         }
@@ -218,7 +224,7 @@ fun QuranScreen(
                         navigateToPage = navigateToPage,
                         pageNumber = pageNumber,
                         surahName = surahName,
-                        showIndex = showIndex,
+                        indexSheetTab = indexSheetTab,
                         savedAyahKeys = savedAyahKeys,
                         fontSizeMultiplier = fontSizeMultiplier,
                         vm = vm,
@@ -226,7 +232,7 @@ fun QuranScreen(
                         onPageChanged = { vm.onPageChanged(it) },
                         onAyahSelected = { vm.selectAyah(it) },
                         onDismissAudio = { vm.dismissAudioSheet() },
-                        onDismissIndex = { showIndex = false },
+                        onDismissIndex = { indexSheetTab = null },
                         onNavigationConsumed = { vm.onNavigationConsumed() },
                         onRetry = { vm.retryPage(it) })
                 }
@@ -646,7 +652,7 @@ fun MushafPager(
     navigateToPage: Int?,
     pageNumber: Int,
     surahName: String,
-    showIndex: Boolean,
+    indexSheetTab: IndexTab?,
     savedAyahKeys: Set<String>,
     fontSizeMultiplier: Float,
     vm: QuranViewModel,
@@ -698,7 +704,15 @@ fun MushafPager(
             Box(
                 Modifier
                     .fillMaxSize()
-                    .padding(vertical = pagePadV),
+                    .padding(vertical = pagePadV)
+                    .graphicsLayer {
+                        val pageOffset = ((pagerState.currentPage - pagerIndex) +
+                                pagerState.currentPageOffsetFraction).coerceIn(-1f, 1f)
+                        val depth = 1f - abs(pageOffset)
+                        scaleX = 0.93f + depth * 0.07f
+                        scaleY = 0.93f + depth * 0.07f
+                        alpha  = 0.6f + depth * 0.4f
+                    },
                 contentAlignment = Alignment.Center
             ) {
                 Box(
@@ -743,17 +757,72 @@ fun MushafPager(
             }
         }
 
-        if (showIndex) {
+        if (indexSheetTab != null) {
             SurahIndexSheet(
                 chapters      = chapters,
                 currentIndex  = indexToPage(pagerState.currentPage) - 1,
+                initialTab    = indexSheetTab,
                 onDismiss     = onDismissIndex,
-                onSelectSurah = { firstPage ->
+                onNavigateToPage = { page ->
                     onDismissIndex()
-                    scope.launch { pagerState.scrollToPage(pageToIndex(firstPage)) }
+                    scope.launch { pagerState.scrollToPage(pageToIndex(page)) }
                 }
             )
         }
+    }
+}
+
+@Composable
+fun PageNavBar(
+    label: String,
+    canPrev: Boolean,
+    canNext: Boolean,
+    onPrev: () -> Unit,
+    onNext: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .shadow(8.dp, RoundedCornerShape(16.dp), ambientColor = Color.Black, spotColor = QuranColors.Gold.copy(alpha = 0.3f))
+            .clip(RoundedCornerShape(16.dp))
+            .background(QuranColors.Panel.copy(alpha = 0.94f))
+            .border(0.5.dp, QuranColors.PanelBorder, RoundedCornerShape(16.dp))
+            .padding(horizontal = 8.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        PageNavButton(label = "‹", enabled = canPrev, onClick = onPrev)
+        Text(
+            label,
+            fontSize   = 12.sp,
+            color      = QuranColors.GoldBright,
+            fontWeight = FontWeight.SemiBold
+        )
+        PageNavButton(label = "›", enabled = canNext, onClick = onNext)
+    }
+}
+
+@Composable
+fun PageNavButton(label: String, enabled: Boolean, onClick: () -> Unit) {
+    Box(
+        Modifier
+            .size(36.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .background(QuranColors.AppBg)
+            .border(
+                1.dp,
+                if (enabled) QuranColors.GoldDim else QuranColors.PanelBorder.copy(alpha = 0.4f),
+                RoundedCornerShape(10.dp)
+            )
+            .clickable(enabled = enabled) { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            label,
+            fontSize   = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color      = if (enabled) QuranColors.GoldBright else QuranColors.GoldEmber
+        )
     }
 }
 
@@ -1081,8 +1150,13 @@ fun PageBottomStrip(quranPage: QuranPage, height: Dp) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SurahIndexSheet(
-    chapters: List<Chapter>, currentIndex: Int, onDismiss: () -> Unit, onSelectSurah: (Int) -> Unit
+    chapters: List<Chapter>,
+    currentIndex: Int,
+    initialTab: IndexTab = IndexTab.SURAHS,
+    onDismiss: () -> Unit,
+    onNavigateToPage: (Int) -> Unit
 ) {
+    var tab by remember { mutableStateOf(initialTab) }
     var search by remember { mutableStateOf("") }
     val filtered = remember(search, chapters) {
         if (search.isBlank()) chapters
@@ -1113,74 +1187,201 @@ fun SurahIndexSheet(
                 Text("القرآن الكريم", fontSize = 17.sp, color = QuranColors.GoldDim,
                     style = TextStyle(textDirection = TextDirection.Rtl))
             }
-            OutlinedTextField(
-                value = search,
-                onValueChange = { search = it },
-                singleLine = true,
-                placeholder = { Text("Search surah...", color = QuranColors.TextMuted, fontSize = 13.sp) },
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = QuranColors.GoldDim,
-                    unfocusedBorderColor = QuranColors.PanelBorder,
-                    focusedTextColor = QuranColors.TextPrimary,
-                    unfocusedTextColor = QuranColors.TextPrimary,
-                    cursorColor = QuranColors.Gold
-                ),
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 7.dp)
-            )
-            LazyColumn(contentPadding = PaddingValues(bottom = 36.dp)) {
-                items(filtered, key = { it.id }) { chapter ->
-                    val firstPage = chapter.pages.firstOrNull() ?: 1
-                    val isActive = (firstPage - 1) == currentIndex
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .background(if (isActive) QuranColors.GoldSubtle else Color.Transparent)
-                            .clickable { onSelectSurah(firstPage) }
-                            .padding(horizontal = 18.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Box(
-                            Modifier
-                                .size(30.dp)
-                                .clip(RoundedCornerShape(7.dp))
-                                .background(if (isActive) QuranColors.GoldSubtle else QuranColors.AppBg)
-                                .border(
-                                    1.dp,
-                                    if (isActive) QuranColors.GoldDim else QuranColors.PanelBorder,
-                                    RoundedCornerShape(7.dp)
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(chapter.id.toString(), fontSize = 11.sp,
-                                color = if (isActive) QuranColors.GoldBright else QuranColors.TextMuted,
-                                fontWeight = FontWeight.Medium)
-                        }
-                        Column(Modifier.weight(1f)) {
-                            Text(chapter.nameSimple, fontSize = 13.sp,
-                                color = if (isActive) QuranColors.GoldBright else QuranColors.TextPrimary,
-                                fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Normal)
+
+            IndexTabSelector(tab = tab, onTabChange = { tab = it })
+            Spacer(Modifier.height(6.dp))
+
+            when (tab) {
+                IndexTab.SURAHS -> {
+                    OutlinedTextField(
+                        value = search,
+                        onValueChange = { search = it },
+                        singleLine = true,
+                        placeholder = { Text("Search surah...", color = QuranColors.TextMuted, fontSize = 13.sp) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = QuranColors.GoldDim,
+                            unfocusedBorderColor = QuranColors.PanelBorder,
+                            focusedTextColor = QuranColors.TextPrimary,
+                            unfocusedTextColor = QuranColors.TextPrimary,
+                            cursorColor = QuranColors.Gold
+                        ),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 7.dp)
+                    )
+                    LazyColumn(contentPadding = PaddingValues(bottom = 36.dp)) {
+                        items(filtered, key = { it.id }) { chapter ->
+                            val firstPage = chapter.pages.firstOrNull() ?: 1
+                            val isActive = (firstPage - 1) == currentIndex
                             Row(
-                                horizontalArrangement = Arrangement.spacedBy(5.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                                Modifier
+                                    .fillMaxWidth()
+                                    .background(if (isActive) QuranColors.GoldSubtle else Color.Transparent)
+                                    .clickable { onNavigateToPage(firstPage) }
+                                    .padding(horizontal = 18.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                Text(chapter.translatedName.name, fontSize = 10.sp,
-                                    color = QuranColors.TextMuted, fontStyle = FontStyle.Italic)
-                                Text(".", fontSize = 10.sp, color = QuranColors.TextMuted)
-                                Text("p.$firstPage", fontSize = 10.sp, color = QuranColors.TextMuted)
-                                Text(".", fontSize = 10.sp, color = QuranColors.TextMuted)
-                                Text("${chapter.versesCount}v", fontSize = 10.sp, color = QuranColors.TextMuted)
-                                RevelationPill(chapter.revelationPlace)
+                                Box(
+                                    Modifier
+                                        .size(30.dp)
+                                        .clip(RoundedCornerShape(7.dp))
+                                        .background(if (isActive) QuranColors.GoldSubtle else QuranColors.AppBg)
+                                        .border(
+                                            1.dp,
+                                            if (isActive) QuranColors.GoldDim else QuranColors.PanelBorder,
+                                            RoundedCornerShape(7.dp)
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(chapter.id.toString(), fontSize = 11.sp,
+                                        color = if (isActive) QuranColors.GoldBright else QuranColors.TextMuted,
+                                        fontWeight = FontWeight.Medium)
+                                }
+                                Column(Modifier.weight(1f)) {
+                                    Text(chapter.nameSimple, fontSize = 13.sp,
+                                        color = if (isActive) QuranColors.GoldBright else QuranColors.TextPrimary,
+                                        fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Normal)
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(5.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(chapter.translatedName.name, fontSize = 10.sp,
+                                            color = QuranColors.TextMuted, fontStyle = FontStyle.Italic)
+                                        Text(".", fontSize = 10.sp, color = QuranColors.TextMuted)
+                                        Text("p.$firstPage", fontSize = 10.sp, color = QuranColors.TextMuted)
+                                        Text(".", fontSize = 10.sp, color = QuranColors.TextMuted)
+                                        Text("${chapter.versesCount}v", fontSize = 10.sp, color = QuranColors.TextMuted)
+                                        RevelationPill(chapter.revelationPlace)
+                                    }
+                                }
+                                Text(chapter.nameArabic, fontSize = 16.sp,
+                                    color = if (isActive) QuranColors.Gold else QuranColors.GoldDim,
+                                    style = TextStyle(textDirection = TextDirection.Rtl))
                             }
+                            HorizontalDivider(color = QuranColors.PanelBorder, thickness = 0.5.dp,
+                                modifier = Modifier.padding(horizontal = 18.dp))
                         }
-                        Text(chapter.nameArabic, fontSize = 16.sp,
-                            color = if (isActive) QuranColors.Gold else QuranColors.GoldDim,
-                            style = TextStyle(textDirection = TextDirection.Rtl))
                     }
-                    HorizontalDivider(color = QuranColors.PanelBorder, thickness = 0.5.dp,
-                        modifier = Modifier.padding(horizontal = 18.dp))
+                }
+
+                IndexTab.PAGE -> PageJumpTab(
+                    currentPage = currentIndex + 1,
+                    onGoToPage  = onNavigateToPage
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun IndexTabSelector(tab: IndexTab, onTabChange: (IndexTab) -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 18.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(QuranColors.AppBg)
+            .border(0.5.dp, QuranColors.PanelBorder, RoundedCornerShape(12.dp))
+            .padding(3.dp)
+    ) {
+        listOf(IndexTab.SURAHS to "السور", IndexTab.PAGE to "الصفحة").forEach { (t, label) ->
+            val selected = t == tab
+            Box(
+                Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(
+                        if (selected) Brush.horizontalGradient(listOf(QuranColors.GoldWarm, QuranColors.GoldBlaze))
+                        else Brush.horizontalGradient(listOf(Color.Transparent, Color.Transparent))
+                    )
+                    .clickable { onTabChange(t) }
+                    .padding(vertical = 9.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    label,
+                    fontSize   = 13.sp,
+                    color      = if (selected) Color.White else QuranColors.GoldDim,
+                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                    style      = TextStyle(textDirection = TextDirection.Rtl)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PageJumpTab(currentPage: Int, onGoToPage: (Int) -> Unit) {
+    var target by remember(currentPage) { mutableStateOf(currentPage) }
+
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 22.dp, vertical = 18.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Box(
+            Modifier
+                .size(92.dp)
+                .clip(CircleShape)
+                .background(Brush.radialGradient(listOf(QuranColors.GoldSubtle, Color.Transparent)))
+                .border(1.dp, QuranColors.GoldDim.copy(alpha = 0.5f), CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("$target", fontSize = 32.sp, color = QuranColors.GoldBlaze, fontWeight = FontWeight.ExtraBold)
+        }
+
+        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Slider(
+                value = target.toFloat(),
+                onValueChange = { target = it.roundToInt().coerceIn(1, QuranViewModel.TOTAL_PAGES) },
+                valueRange = 1f..QuranViewModel.TOTAL_PAGES.toFloat(),
+                colors = SliderDefaults.colors(
+                    thumbColor         = QuranColors.GoldBlaze,
+                    activeTrackColor   = QuranColors.GoldWarm,
+                    inactiveTrackColor = QuranColors.PanelBorder
+                )
+            )
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("1", fontSize = 10.sp, color = QuranColors.TextMuted)
+                Text("${QuranViewModel.TOTAL_PAGES}", fontSize = 10.sp, color = QuranColors.TextMuted)
+            }
+        }
+
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            listOf(-10, -1, 1, 10).forEach { delta ->
+                Box(
+                    Modifier
+                        .size(42.dp)
+                        .clip(CircleShape)
+                        .background(QuranColors.AppBg)
+                        .border(0.5.dp, QuranColors.PanelBorder, CircleShape)
+                        .clickable { target = (target + delta).coerceIn(1, QuranViewModel.TOTAL_PAGES) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        if (delta > 0) "+$delta" else "$delta",
+                        fontSize = 11.sp, color = QuranColors.GoldDim, fontWeight = FontWeight.SemiBold
+                    )
                 }
             }
         }
+
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(14.dp))
+                .background(Brush.horizontalGradient(listOf(QuranColors.GoldWarm, QuranColors.GoldBlaze)))
+                .clickable { onGoToPage(target) }
+                .padding(vertical = 14.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                "الذهاب إلى الصفحة",
+                fontSize = 14.sp, color = Color.White, fontWeight = FontWeight.Bold,
+                style = TextStyle(textDirection = TextDirection.Rtl)
+            )
+        }
+        Spacer(Modifier.height(16.dp))
     }
 }

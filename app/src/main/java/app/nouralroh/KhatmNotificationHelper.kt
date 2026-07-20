@@ -22,7 +22,7 @@ object KhatmNotificationHelper {
                 "ختم القرآن",
                 NotificationManager.IMPORTANCE_DEFAULT
             ).apply {
-                description = "تذكير يومي بقراءة الورد"
+                description = "تذكير يومي بقراءة الحصة"
             }
             context.getSystemService(NotificationManager::class.java)
                 .createNotificationChannel(channel)
@@ -32,11 +32,11 @@ object KhatmNotificationHelper {
     @SuppressLint("MissingPermission")
     fun showReminder(context: Context, allDone: Boolean = false) {
 
-        val title = if (allDone) "✅ ورد اليوم مكتمل"     else "📖 ورد اليوم بانتظارك"
+        val title = if (allDone) "✅ حصة اليوم مكتملة"     else "📖 حصة اليوم بانتظارك"
         val body  = if (allDone)
             "أحسنت! يمكنك مراجعة تقدمك في التطبيق"
         else
-            "لا تنسَ ورد اليوم من ختم القرآن الكريم"
+            "لا تنسَ حصة اليوم من ختم القرآن الكريم"
 
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK

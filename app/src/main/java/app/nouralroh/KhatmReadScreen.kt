@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDirection
@@ -26,6 +27,7 @@ import app.nouralroh.data.Chapter
 import app.nouralroh.data.QuranPage
 import app.nouralroh.viewmodel.KhatmViewModel
 import app.nouralroh.viewmodel.QuranViewModel
+import kotlin.math.abs
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -36,13 +38,18 @@ fun KhatmReadScreen(
 ) {
     val plan      by vm.plan.collectAsStateWithLifecycle()
     val readPages  = plan?.readPages ?: emptySet()
-    val bonusStartPage = plan?.bonusStartPage  // ← la page bonus
 
-    val todayRange = remember(plan) { vm.todayRange() }
+    // ⚠️ Figé une seule fois à l'ouverture de l'écran : todayRange() glisse en
+    // direct (son début = première page NON lue), et markPageRead() est appelé
+    // à chaque swipe. Si on recalculait ces valeurs en direct, la liste de
+    // pages changeait sous les pieds du pager en pleine lecture, désynchronisant
+    // son index de la page réellement affichée (ex: page 1 → affichait page 3).
+    val todayRange = remember { vm.todayRange() }
+    val bonusStartPage = remember { plan?.bonusStartPage }  // ← la page bonus
 
     // Toutes les pages du ward (lues + non lues) + bonus si hors du range
     // → l'utilisateur peut swiper vers السابقة pour revenir sur une page déjà lue
-    val displayPages = remember(todayRange, bonusStartPage) {
+    val displayPages = remember {
         val base  = todayRange.toList()
         val bonus = if (bonusStartPage != null && bonusStartPage !in todayRange) {
             listOf(bonusStartPage)
@@ -112,7 +119,15 @@ fun KhatmReadScreen(
                 Box(
                     Modifier
                         .fillMaxSize()
-                        .padding(vertical = 6.dp),
+                        .padding(vertical = 6.dp)
+                        .graphicsLayer {
+                            val pageOffset = ((pagerState.currentPage - index) +
+                                    pagerState.currentPageOffsetFraction).coerceIn(-1f, 1f)
+                            val depth = 1f - abs(pageOffset)
+                            scaleX = 0.93f + depth * 0.07f
+                            scaleY = 0.93f + depth * 0.07f
+                            alpha  = 0.6f + depth * 0.4f
+                        },
                     contentAlignment = Alignment.Center
                 ) {
                     Box(
@@ -184,7 +199,7 @@ fun KhatmReadScreen(
                             .padding(horizontal = 20.dp, vertical = 10.dp)
                     ) {
                         Text(
-                            "🌟  أحسنت! ورد اليوم مكتمل",
+                            "🌟  أحسنت! حصة اليوم مكتملة",
                             fontSize   = 12.sp,
                             color      = QuranColors.GoldBlaze,
                             fontWeight = FontWeight.SemiBold,

@@ -161,7 +161,10 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         // ── Polling loop ~12 fps ──────────────────────────────────────────────
-        viewModelScope.launch {
+        // Runs off the main thread: viewModelScope defaults to Main.immediate,
+        // and doing this every 80ms on the UI thread was adding to main-thread
+        // contention (contributing to input-dispatch ANRs under load).
+        viewModelScope.launch(Dispatchers.Default) {
             var wasPlaying = false
             while (isActive) {
                 delay(80)
