@@ -27,9 +27,15 @@ object DataInstallManager {
     // ── Install flag ──────────────────────────────────────────────────────────
     fun isInstalled(context: Context): Boolean {
         if (!File(context.filesDir, FLAG_FILE).exists()) return false
-        return File(context.filesDir, "quran/pages/1.json").exists() &&
-                File(context.filesDir, "quran/pages/300.json").exists() &&
-                File(context.filesDir, "timing/timing.json").exists()
+        if (!File(context.filesDir, "timing/timing.json").exists()) return false
+
+        // Compte réel des pages présentes plutôt qu'un spot-check :
+        // un stockage partiellement effacé peut laisser le flag + quelques
+        // fichiers en place, ce qui déclencherait un crash plus tard sur une
+        // page manquante si on ne vérifiait que quelques fichiers témoins.
+        val pagesDir = File(context.filesDir, "quran/pages")
+        val pageCount = pagesDir.listFiles()?.count { it.name.endsWith(".json") } ?: 0
+        return pageCount == 604
     }
 
     fun clearInstall(context: Context) {

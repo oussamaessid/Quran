@@ -47,16 +47,15 @@ fun KhatmReadScreen(
     val todayRange = remember { vm.todayRange() }
     val bonusStartPage = remember { plan?.bonusStartPage }  // ← la page bonus
 
-    // Toutes les pages du ward (lues + non lues) + bonus si hors du range
-    // → l'utilisateur peut swiper vers السابقة pour revenir sur une page déjà lue
+    // Plage contiguë (page par page) plutôt qu'une union de sous-listes :
+    // le trail affiche 1..todayRange.last, donc taper sur une ancienne page déjà
+    // lue (ex: page 2, avec todayRange = 10..20) doit permettre de swiper dans
+    // l'ordre 2, 3, 4… jusqu'à 20 — pas sauter directement de 2 à 10 en perdant
+    // les pages intermédiaires (bug précédent avec une simple union de listes).
     val displayPages = remember {
-        val base  = todayRange.toList()
-        val bonus = if (bonusStartPage != null && bonusStartPage !in todayRange) {
-            listOf(bonusStartPage)
-        } else {
-            emptyList()
-        }
-        (bonus + base).distinct().sorted()
+        val rangeStart = minOf(startPage, bonusStartPage ?: todayRange.first, todayRange.first)
+        val rangeEnd   = maxOf(startPage, todayRange.last)
+        (rangeStart..rangeEnd).toList()
     }
 
     if (displayPages.isEmpty()) {
