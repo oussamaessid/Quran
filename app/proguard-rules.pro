@@ -30,3 +30,20 @@
 -keep class app.nouralroh.data.SurahJson { *; }
 -keep class app.nouralroh.data.AyahJson { *; }
 -keep class app.nouralroh.data.WordJson { *; }
+-keep class app.nouralroh.data.** { *; }
+
+# Gson uses generic type signatures at runtime (List<SurahJson>, List<AyahJson>, ...).
+# Without these attributes R8 can strip that info even when the classes themselves
+# are kept, which is another common cause of the same
+# "Abstract classes can't be instantiated" crash in release builds.
+-keepattributes Signature
+-keepattributes *Annotation*
+-keepattributes EnclosingMethod
+-keepattributes InnerClasses
+
+# Gson's own reflection machinery must not be obfuscated either.
+-keep class com.google.gson.** { *; }
+-keep class * implements com.google.gson.TypeAdapterFactory
+-keep class * implements com.google.gson.JsonSerializer
+-keep class * implements com.google.gson.JsonDeserializer
+-dontwarn com.google.gson.**
