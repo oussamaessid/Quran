@@ -21,3 +21,12 @@
 #-renamesourcefileattribute SourceFile
 
 -keep class com.batoulapps.adhan.** { *; }
+
+# Gson parses PageJson/SurahJson/AyahJson/WordJson by reflection on field names
+# (no @SerializedName). Without this, R8 renames the fields in release builds and
+# Gson silently returns null/empty data for every Quran page — works in debug,
+# breaks only in the minified Play Store build.
+-keep class app.nouralroh.data.PageJson { *; }
+-keep class app.nouralroh.data.SurahJson { *; }
+-keep class app.nouralroh.data.AyahJson { *; }
+-keep class app.nouralroh.data.WordJson { *; }
