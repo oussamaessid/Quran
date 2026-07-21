@@ -112,7 +112,7 @@ fun KhatmReadScreen(
                 reverseLayout           = true,
                 beyondViewportPageCount = 1
             ) { index ->
-                val pageNum = displayPages[index]
+                val pageNum = displayPages.getOrNull(index) ?: return@HorizontalPager
                 val isBonus = pageNum == bonusStartPage && pageNum in readPages
 
                 Box(
