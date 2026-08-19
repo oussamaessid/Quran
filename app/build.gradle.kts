@@ -67,9 +67,11 @@ dependencies {
     implementation(libs.play.services.location)
     implementation(libs.accompanist.permissions)
 
+
     implementation("androidx.media3:media3-exoplayer:1.3.1")
     implementation("com.google.android.gms:play-services-ads:23.6.0")
     implementation("androidx.work:work-runtime-ktx:2.9.0")
+    implementation(libs.androidx.glance.appwidget)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

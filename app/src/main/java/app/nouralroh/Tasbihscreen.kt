@@ -86,14 +86,15 @@ val BUILT_IN_PRAISE = listOf(
     PraiseItem("اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ",           defaultTarget = 10),
 )
 
+// Fixed decorative accents (not theme-driven — this is a static, non-composable list).
 private val accentColors = listOf(
-    QuranColors.GoldBlaze,
-    QuranColors.GoldBright,
-    QuranColors.Gold,
-    QuranColors.GoldWarm,
-    QuranColors.GoldAccent,
-    QuranColors.GoldDim,
-    QuranColors.GoldWarm,
+    Color(0xFFFFE27A), // GoldBlaze
+    Color(0xFFE8B84A), // GoldBright
+    Color(0xFFC8921E), // Gold
+    Color(0xFFA87830), // GoldWarm
+    Color(0xFFF5D888), // GoldAccent
+    Color(0xFF7A5520), // GoldDim
+    Color(0xFFA87830), // GoldWarm
 )
 
 fun loadCustomPraise(ctx: Context): List<PraiseItem> {
@@ -537,7 +538,7 @@ fun TasbihScreen(onBack: () -> Unit) {
 
     Column(
         modifier = Modifier.fillMaxSize().background(
-            Brush.verticalGradient(listOf(QuranColors.AppBg, Color(0xFF1A0C00), QuranColors.AppBg))
+            Brush.verticalGradient(listOf(QuranColors.AppBg, QuranColors.Panel, QuranColors.AppBg))
         )
     ) {
         Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
@@ -545,7 +546,7 @@ fun TasbihScreen(onBack: () -> Unit) {
         // ── Top bar ───────────────────────────────────────────────────────────
         Box(
             Modifier.fillMaxWidth().background(
-                Brush.horizontalGradient(listOf(Color(0xFF2A1A04), QuranColors.AppBg, Color(0xFF2A1A04)))
+                Brush.horizontalGradient(listOf(QuranColors.Panel, QuranColors.AppBg, QuranColors.Panel))
             )
         ) {
             Box(
@@ -586,7 +587,7 @@ fun TasbihScreen(onBack: () -> Unit) {
             Box(
                 Modifier.fillMaxWidth().padding(horizontal = 18.dp)
                     .clip(RoundedCornerShape(20.dp))
-                    .background(Brush.verticalGradient(listOf(Color(0xFF1E1000), Color(0xFF0E0800))))
+                    .background(Brush.verticalGradient(listOf(QuranColors.Panel, QuranColors.AppBg)))
                     .border(1.dp, Brush.verticalGradient(listOf(glowColor.copy(0.6f), glowColor.copy(0.15f))), RoundedCornerShape(20.dp))
                     .clickable { showSelector = true }
             ) {
@@ -619,7 +620,7 @@ fun TasbihScreen(onBack: () -> Unit) {
             Box(
                 Modifier.fillMaxWidth().padding(horizontal = 18.dp)
                     .clip(RoundedCornerShape(18.dp))
-                    .background(Brush.verticalGradient(listOf(Color(0xFF1A1000), Color(0xFF100800))))
+                    .background(Brush.verticalGradient(listOf(QuranColors.Panel, QuranColors.AppBg)))
                     .border(1.dp,
                         if (isCustomMode) Brush.verticalGradient(listOf(QuranColors.Gold.copy(0.5f), QuranColors.GoldDim.copy(0.2f)))
                         else Brush.verticalGradient(listOf(QuranColors.PanelBorder.copy(0.4f), Color.Transparent)),
@@ -644,7 +645,7 @@ fun TasbihScreen(onBack: () -> Unit) {
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text("Texte du dhikr", color = QuranColors.GoldDim, fontSize = 9.sp, letterSpacing = 0.5.sp)
                         Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp))
-                            .background(Color(0xFF0E0800))
+                            .background(QuranColors.AppBg)
                             .border(1.dp, if (customTextFocused) QuranColors.Gold.copy(0.55f) else QuranColors.PanelBorder.copy(0.5f), RoundedCornerShape(10.dp))
                             .clickable { customTextFR.requestFocus(); keyboard?.show() }
                             .padding(horizontal = 14.dp, vertical = 12.dp)) {
@@ -672,11 +673,11 @@ fun TasbihScreen(onBack: () -> Unit) {
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text("Nombre de répétitions", color = QuranColors.GoldDim, fontSize = 9.sp, letterSpacing = 0.5.sp)
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Box(Modifier.size(36.dp).clip(CircleShape).background(Color(0xFF0E0800))
+                            Box(Modifier.size(36.dp).clip(CircleShape).background(QuranColors.AppBg)
                                 .border(1.dp, QuranColors.PanelBorder.copy(0.6f), CircleShape)
                                 .clickable { if (target > 1) { target--; customNumberRaw = target.toString(); count = count.coerceAtMost(target) } },
                                 contentAlignment = Alignment.Center) { Text("−", color = QuranColors.GoldDim, fontSize = 18.sp) }
-                            Box(Modifier.weight(1f).clip(RoundedCornerShape(10.dp)).background(Color(0xFF0E0800))
+                            Box(Modifier.weight(1f).clip(RoundedCornerShape(10.dp)).background(QuranColors.AppBg)
                                 .border(1.dp, if (customNumberFocused) QuranColors.Gold.copy(0.55f) else QuranColors.PanelBorder.copy(0.5f), RoundedCornerShape(10.dp))
                                 .clickable { customNumberFR.requestFocus(); keyboard?.show() }
                                 .padding(horizontal = 14.dp, vertical = 10.dp), contentAlignment = Alignment.Center) {
@@ -694,7 +695,7 @@ fun TasbihScreen(onBack: () -> Unit) {
                                         inner()
                                     })
                             }
-                            Box(Modifier.size(36.dp).clip(CircleShape).background(Color(0xFF0E0800))
+                            Box(Modifier.size(36.dp).clip(CircleShape).background(QuranColors.AppBg)
                                 .border(1.dp, QuranColors.PanelBorder.copy(0.6f), CircleShape)
                                 .clickable { target++; customNumberRaw = target.toString() },
                                 contentAlignment = Alignment.Center) { Text("+", color = QuranColors.GoldDim, fontSize = 18.sp) }
@@ -703,7 +704,7 @@ fun TasbihScreen(onBack: () -> Unit) {
                             listOf(10, 33, 100, 1000).forEach { t ->
                                 val sel = t == target
                                 Box(Modifier.weight(1f).clip(RoundedCornerShape(8.dp))
-                                    .background(if (sel) QuranColors.GoldSubtle else Color(0xFF0E0800))
+                                    .background(if (sel) QuranColors.GoldSubtle else QuranColors.AppBg)
                                     .border(1.dp, if (sel) QuranColors.Gold.copy(0.6f) else QuranColors.PanelBorder.copy(0.4f), RoundedCornerShape(8.dp))
                                     .clickable { target = t; customNumberRaw = t.toString(); count = count.coerceAtMost(t) }
                                     .padding(vertical = 5.dp), contentAlignment = Alignment.Center) {
@@ -717,7 +718,7 @@ fun TasbihScreen(onBack: () -> Unit) {
                         Spacer(Modifier.height(2.dp))
                         Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
                             .background(if (saveConfirmed) Brush.horizontalGradient(listOf(Color(0xFF1A2800), Color(0xFF0E1A00)))
-                            else Brush.horizontalGradient(listOf(Color(0xFF2A1A04), Color(0xFF1A0E00))))
+                            else Brush.horizontalGradient(listOf(QuranColors.Panel, QuranColors.AppBg)))
                             .border(1.dp, if (saveConfirmed) QuranColors.GoldBright.copy(0.5f) else QuranColors.Gold.copy(0.45f), RoundedCornerShape(12.dp))
                             .clickable(enabled = !saveConfirmed) {
                                 if (customText.isBlank()) return@clickable
@@ -784,7 +785,7 @@ fun TasbihScreen(onBack: () -> Unit) {
             ) {
                 Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(progress = { animProg }, modifier = Modifier.size(110.dp),
-                        color = glowColor, trackColor = Color(0xFF1A0E00), strokeWidth = 3.dp)
+                        color = glowColor, trackColor = QuranColors.AppBg, strokeWidth = 3.dp)
                     Spacer(Modifier.size(80.dp))
                 }
                 Spacer(Modifier.height(12.dp))
@@ -809,7 +810,7 @@ fun TasbihScreen(onBack: () -> Unit) {
             }
         }
 
-        Box(Modifier.fillMaxWidth().background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xFF1A0C00))))) {
+        Box(Modifier.fillMaxWidth().background(Brush.verticalGradient(listOf(Color.Transparent, QuranColors.AppBg)))) {
             Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
         }
     }
@@ -817,7 +818,7 @@ fun TasbihScreen(onBack: () -> Unit) {
     if (showSelector) {
         Dialog(onDismissRequest = { showSelector = false }) {
             Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp))
-                .background(Brush.verticalGradient(listOf(Color(0xFF1E1000), Color(0xFF0E0800))))
+                .background(Brush.verticalGradient(listOf(QuranColors.Panel, QuranColors.AppBg)))
                 .border(1.dp, Brush.verticalGradient(listOf(QuranColors.Gold.copy(0.5f), QuranColors.PanelBorder.copy(0.3f))), RoundedCornerShape(24.dp))
                 .padding(16.dp)) {
                 Column {
@@ -834,8 +835,8 @@ fun TasbihScreen(onBack: () -> Unit) {
                             val isSel  = praise == selectedPraise && !isCustomMode
                             val accent = accentColors.getOrElse(index) { QuranColors.Gold }
                             Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
-                                .background(if (isSel) Brush.horizontalGradient(listOf(accent.copy(0.15f), Color(0xFF0E0800)))
-                                else Brush.horizontalGradient(listOf(Color(0xFF1A1000), Color(0xFF0E0800))))
+                                .background(if (isSel) Brush.horizontalGradient(listOf(accent.copy(0.15f), QuranColors.AppBg))
+                                else Brush.horizontalGradient(listOf(QuranColors.Panel, QuranColors.AppBg)))
                                 .border(1.dp, if (isSel) accent.copy(0.5f) else QuranColors.PanelBorder.copy(0.3f), RoundedCornerShape(16.dp))
                                 .clickable {
                                     selectedPraise = praise; target = praise.defaultTarget

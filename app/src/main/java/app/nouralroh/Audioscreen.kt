@@ -153,7 +153,7 @@ fun RecitersScreen(
         // ── Top Bar ──────────────────────────────────────────────────────────
         Box(
             Modifier.fillMaxWidth()
-                .background(Brush.verticalGradient(listOf(Color(0xFF1E1000), QuranColors.Panel)))
+                .background(Brush.verticalGradient(listOf(QuranColors.Panel, QuranColors.AppBg)))
                 .padding(horizontal = 14.dp, vertical = 14.dp)
         ) {
             Box(
@@ -207,7 +207,7 @@ fun RecitersScreen(
                     Modifier.fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 10.dp)
                         .clip(RoundedCornerShape(14.dp))
-                        .background(Color(0xFF1A0E00))
+                        .background(QuranColors.AppBg)
                         .border(0.5.dp,
                             Brush.horizontalGradient(listOf(QuranColors.GoldDim.copy(alpha = 0.4f), QuranColors.PanelBorder)),
                             RoundedCornerShape(14.dp))
@@ -259,7 +259,7 @@ fun ReciterCard(reciter: Reciter, onClick: () -> Unit) {
     Box(
         Modifier.fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(Brush.horizontalGradient(listOf(Color(0xFF1E1000), Color(0xFF130A00), Color(0xFF1A0D00))))
+            .background(Brush.horizontalGradient(listOf(QuranColors.Panel, QuranColors.AppBg, QuranColors.Panel)))
             .border(0.5.dp,
                 Brush.horizontalGradient(listOf(
                     QuranColors.GoldBlaze.copy(alpha = glow * 0.6f),
@@ -389,7 +389,7 @@ fun SurahsScreen(
             // ── Top Bar ──────────────────────────────────────────────────────
             Box(
                 Modifier.fillMaxWidth()
-                    .background(Brush.verticalGradient(listOf(Color(0xFF1E1000), QuranColors.Panel)))
+                    .background(Brush.verticalGradient(listOf(QuranColors.Panel, QuranColors.AppBg)))
                     .padding(horizontal = 14.dp, vertical = 14.dp)
             ) {
                 Box(
@@ -440,7 +440,7 @@ fun SurahsScreen(
                 Modifier.fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 10.dp)
                     .clip(RoundedCornerShape(14.dp))
-                    .background(Color(0xFF1A0E00))
+                    .background(QuranColors.AppBg)
                     .border(0.5.dp,
                         Brush.horizontalGradient(listOf(QuranColors.GoldDim.copy(alpha = 0.4f), QuranColors.PanelBorder)),
                         RoundedCornerShape(14.dp))
@@ -532,9 +532,9 @@ fun SurahCard(surah: SurahInfo, isActive: Boolean, onClick: () -> Unit) {
             .clip(RoundedCornerShape(14.dp))
             .background(
                 if (isActive)
-                    Brush.horizontalGradient(listOf(Color(0xFF2C1600), Color(0xFF1E1000), Color(0xFF2A1400)))
+                    Brush.horizontalGradient(listOf(QuranColors.GoldSubtle, QuranColors.Panel, QuranColors.GoldSubtle))
                 else
-                    Brush.horizontalGradient(listOf(Color(0xFF1A0E00), Color(0xFF130900), Color(0xFF170C00)))
+                    Brush.horizontalGradient(listOf(QuranColors.AppBg, QuranColors.AppBg, QuranColors.AppBg))
             )
             .border(
                 if (isActive) 0.8.dp else 0.5.dp,
@@ -669,7 +669,7 @@ fun AudioPlayer(
         Modifier.fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 10.dp)
             .clip(RoundedCornerShape(20.dp))
-            .background(Brush.verticalGradient(listOf(Color(0xFF2C1600), Color(0xFF1A0C00), Color(0xFF0E0600))))
+            .background(Brush.verticalGradient(listOf(QuranColors.Panel, QuranColors.AppBg, QuranColors.AppBg)))
             .border(1.dp,
                 Brush.verticalGradient(listOf(
                     QuranColors.Gold.copy(alpha = 0.65f), QuranColors.PanelBorder.copy(alpha = 0.3f), QuranColors.Gold.copy(alpha = 0.3f)

@@ -10,8 +10,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,11 +27,13 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -58,6 +62,7 @@ fun HomeScreen(
     onOpenKhatm        : () -> Unit,
     onOpenSalat        : () -> Unit,
     onOpenAudio        : () -> Unit,
+    onOpenSettings     : () -> Unit,
 ) {
     val state         by prayerVm.state.collectAsStateWithLifecycle()
     val context       = LocalContext.current
@@ -168,55 +173,66 @@ fun HomeScreen(
                         icon = "📖", titleArabic = "القرآن الكريم", titleLatin = "Al-Qur'an",
                         subtitle = "604 pages  ·  114 sourates", badge = "LECTURE",
                         accentColor = QuranColors.GoldBlaze, titleColor = QuranColors.GoldBlaze,
-                        gradientStart = Color(0xFF2A1A04), gradientEnd = Color(0xFF1A0C00),
+                        gradientStart = QuranColors.Panel, gradientEnd = QuranColors.AppBg,
                         onClick = onOpenQuran
                     )
                     NavCardVertical(
                         icon = "🎧", titleArabic = "الاستماع إلى القرآن", titleLatin = "Audio",
                         subtitle = "Écoute · Récitants complets · 114 sourates", badge = "AUDIO",
                         accentColor = QuranColors.GoldBlaze, titleColor = QuranColors.GoldBlaze,
-                        gradientStart = Color(0xFF2A1A04), gradientEnd = Color(0xFF1A0C00),
+                        gradientStart = QuranColors.Panel, gradientEnd = QuranColors.AppBg,
                         onClick = onOpenAudio
                     )
                     NavCardVertical(
                         icon = "🧭", titleArabic = "القبلة", titleLatin = "Al-Qibla",
                         subtitle = "Direction de La Mecque", badge = "BOUSSOLE",
                         accentColor = QuranColors.GoldBlaze, titleColor = QuranColors.GoldBlaze,
-                        gradientStart = Color(0xFF2A1A04), gradientEnd = Color(0xFF1A0C00),
+                        gradientStart = QuranColors.Panel, gradientEnd = QuranColors.AppBg,
                         onClick = onOpenQibla
                     )
                     NavCardVertical(
                         icon = "📿", titleArabic = "التسبيح", titleLatin = "Tasbih",
                         subtitle = "Compteur de dhikr", badge = "DHIKR",
                         accentColor = QuranColors.GoldBlaze, titleColor = QuranColors.GoldBlaze,
-                        gradientStart = Color(0xFF2A1A04), gradientEnd = Color(0xFF1A0C00),
+                        gradientStart = QuranColors.Panel, gradientEnd = QuranColors.AppBg,
                         onClick = onOpenTasbih
                     )
                     NavCardVertical(
                         icon = "🤲", titleArabic = "الأذكار والأدعية", titleLatin = "Adhkar & Duas",
                         subtitle = "Remembrances coraniques", badge = "ADHKAR",
                         accentColor = QuranColors.GoldBlaze, titleColor = QuranColors.GoldBlaze,
-                        gradientStart = Color(0xFF2A1A04), gradientEnd = Color(0xFF1A0C00),
+                        gradientStart = QuranColors.Panel, gradientEnd = QuranColors.AppBg,
                         onClick = onOpenAdhkar
                     )
                     NavCardVertical(
                         icon = "🌙", titleArabic = "ختم القرآن", titleLatin = "Khatm",
                         subtitle = "Suivi de lecture · 30 jours · Personnalisé", badge = "KHATM",
                         accentColor = QuranColors.GoldBlaze, titleColor = QuranColors.GoldBlaze,
-                        gradientStart = Color(0xFF2A1A04), gradientEnd = Color(0xFF1A0C00),
+                        gradientStart = QuranColors.Panel, gradientEnd = QuranColors.AppBg,
                         onClick = onOpenKhatm
                     )
                     NavCardVertical(
                         icon = "🕌", titleArabic = "الصلاة", titleLatin = "Salat",
                         subtitle = "Compteur rak'ahs · capteur lumière", badge = "RAK'AHS",
                         accentColor = QuranColors.GoldBlaze, titleColor = QuranColors.GoldBlaze,
-                        gradientStart = Color(0xFF2A1A04), gradientEnd = Color(0xFF1A0C00),
+                        gradientStart = QuranColors.Panel, gradientEnd = QuranColors.AppBg,
                         onClick = onOpenSalat
                     )
                 }
 
                 Spacer(Modifier.height(24.dp))
             }
+        }
+
+        IconButton(
+            onClick = onOpenSettings,
+            modifier = Modifier.align(Alignment.TopEnd).padding(top = 6.dp, end = 6.dp)
+                .size(40.dp).clip(CircleShape)
+                .background(QuranColors.Panel.copy(alpha = 0.7f))
+                .border(1.dp, QuranColors.PanelBorder, CircleShape)
+        ) {
+            Icon(Icons.Default.Settings, contentDescription = "Settings", tint = QuranColors.GoldDim,
+                modifier = Modifier.size(20.dp))
         }
     }
 }
@@ -250,7 +266,7 @@ fun PrayerTimesCard(pt: app.nouralroh.viewmodel.PrayerTimes) {
 
     Box(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp))
-            .background(Brush.verticalGradient(listOf(Color(0xFF1E1000), Color(0xFF0E0800), Color(0xFF1A0D00))))
+            .background(Brush.verticalGradient(listOf(QuranColors.Panel, QuranColors.AppBg, QuranColors.Panel)))
             .border(1.dp,
                 Brush.verticalGradient(listOf(
                     QuranColors.Gold.copy(alpha = 0.55f),
@@ -290,7 +306,7 @@ fun PrayerTimesCard(pt: app.nouralroh.viewmodel.PrayerTimes) {
                         }
                     }
                     Box(Modifier.clip(RoundedCornerShape(14.dp))
-                        .background(Brush.linearGradient(listOf(Color(0xFF2C1800), Color(0xFF1A0E00))))
+                        .background(Brush.linearGradient(listOf(QuranColors.GoldSubtle, QuranColors.AppBg)))
                         .border(1.dp, Brush.verticalGradient(listOf(
                             QuranColors.Gold.copy(alpha = 0.6f), QuranColors.PanelBorder.copy(alpha = 0.4f))),
                             RoundedCornerShape(14.dp))
@@ -404,6 +420,7 @@ fun NavCardVertical(
     val shimmerX by inf.animateFloat(-1f, 2f,
         infiniteRepeatable(tween(2800, easing = LinearEasing), RepeatMode.Restart), "shimmer_$titleLatin")
 
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
     Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp))
         .background(Brush.linearGradient(listOf(gradientStart, gradientEnd, gradientStart.copy(alpha = 0.7f))))
         .border(1.dp, Brush.linearGradient(listOf(
@@ -450,7 +467,8 @@ fun NavCardVertical(
                 verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 repeat(3) { i -> Box(Modifier.size(4.dp).clip(CircleShape).background(accentColor.copy(alpha = 0.2f + i * 0.2f))) }
                 Spacer(Modifier.height(4.dp))
-                Text("›", fontSize = 22.sp, fontWeight = FontWeight.Light, color = accentColor.copy(alpha = 0.65f))
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null,
+                    tint = accentColor.copy(alpha = 0.65f), modifier = Modifier.size(22.dp))
             }
         }
         Box(Modifier.fillMaxWidth().height(1.dp).align(Alignment.TopCenter)
@@ -461,12 +479,14 @@ fun NavCardVertical(
                     accentColor.copy(alpha = 0.3f * glowAlpha), Color.Transparent),
                 startX = shimmerX * 400f, endX = shimmerX * 400f + 400f)))
     }
+    }
 }
 
 @Composable
 fun NavCardLandscape(icon: String, titleArabic: String, titleLatin: String, subtitle: String, onClick: () -> Unit) {
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
     Row(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
-        .background(Brush.horizontalGradient(listOf(Color(0xFF2A1A04), QuranColors.Panel, Color(0xFF1A0F00))))
+        .background(Brush.horizontalGradient(listOf(QuranColors.AppBg, QuranColors.Panel, QuranColors.AppBg)))
         .border(1.dp, Brush.horizontalGradient(listOf(QuranColors.Gold, QuranColors.PanelBorder)), RoundedCornerShape(14.dp))
         .clickable { onClick() }.padding(horizontal = 18.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -483,7 +503,9 @@ fun NavCardLandscape(icon: String, titleArabic: String, titleLatin: String, subt
                 fontWeight = FontWeight.Medium, letterSpacing = 1.sp)
             Text(subtitle, fontSize = 9.sp, color = QuranColors.TextMuted)
         }
-        Text("›", fontSize = 20.sp, color = QuranColors.GoldDim)
+        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null,
+            tint = QuranColors.GoldDim, modifier = Modifier.size(20.dp))
+    }
     }
 }
 
@@ -492,7 +514,7 @@ fun GpsActivationDialog(onOpenGps: () -> Unit, onDismiss: () -> Unit) {
     Dialog(onDismissRequest = { onDismiss() },
         properties = DialogProperties(dismissOnBackPress = true, dismissOnClickOutside = false)) {
         Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp))
-            .background(Brush.verticalGradient(listOf(Color(0xFF2A1A04), Color(0xFF1A0F00))))
+            .background(Brush.verticalGradient(listOf(QuranColors.Panel, QuranColors.AppBg)))
             .border(1.dp, Brush.verticalGradient(listOf(QuranColors.Gold, QuranColors.PanelBorder)), RoundedCornerShape(20.dp))
             .padding(28.dp)) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(18.dp)) {
@@ -582,7 +604,7 @@ fun AppHeader() {
 @Composable
 fun PrayerTimesLoadingCard() {
     Box(Modifier.fillMaxWidth().height(200.dp).clip(RoundedCornerShape(22.dp))
-        .background(Color(0xFF1E1000)).border(1.dp, QuranColors.PanelBorder, RoundedCornerShape(22.dp)),
+        .background(QuranColors.Panel).border(1.dp, QuranColors.PanelBorder, RoundedCornerShape(22.dp)),
         contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
             CircularProgressIndicator(color = QuranColors.Gold, strokeWidth = 2.dp, modifier = Modifier.size(28.dp))
@@ -595,7 +617,7 @@ fun PrayerTimesLoadingCard() {
 @Composable
 fun PrayerTimesErrorCard(message: String, onRefresh: () -> Unit) {
     Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp))
-        .background(Color(0xFF1E1000)).border(1.dp, QuranColors.PanelBorder, RoundedCornerShape(22.dp))
+        .background(QuranColors.Panel).border(1.dp, QuranColors.PanelBorder, RoundedCornerShape(22.dp))
         .padding(20.dp), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Icon(Icons.Default.LocationOn, null, tint = QuranColors.GoldDim, modifier = Modifier.size(28.dp))
@@ -617,7 +639,7 @@ fun PrayerTimesErrorCard(message: String, onRefresh: () -> Unit) {
 fun NavCard(modifier: Modifier, icon: String, titleArabic: String,
             titleLatin: String, subtitle: String, onClick: () -> Unit) {
     Box(modifier.aspectRatio(0.85f).clip(RoundedCornerShape(14.dp))
-        .background(Brush.verticalGradient(listOf(Color(0xFF2A1A04), QuranColors.Panel, Color(0xFF1A0F00))))
+        .background(Brush.verticalGradient(listOf(QuranColors.Panel, QuranColors.Panel, QuranColors.AppBg)))
         .border(1.dp, Brush.verticalGradient(listOf(QuranColors.Gold, QuranColors.PanelBorder)), RoundedCornerShape(14.dp))
         .clickable { onClick() }.padding(16.dp), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -634,7 +656,7 @@ fun NavCard(modifier: Modifier, icon: String, titleArabic: String,
                 modifier = Modifier.padding(horizontal = 8.dp))
             Text(subtitle, fontSize = 9.sp, color = QuranColors.TextMuted,
                 textAlign = TextAlign.Center, lineHeight = 13.sp)
-            Text("›", fontSize = 18.sp, color = QuranColors.GoldDim)
+            Text(">", fontSize = 18.sp, color = QuranColors.GoldDim)
         }
     }
 }

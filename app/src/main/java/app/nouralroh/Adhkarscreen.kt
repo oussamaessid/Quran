@@ -65,7 +65,7 @@ val ADHKAR_CATEGORIES = listOf(
         titleArabic = "أذكار الصباح",
         titleFr     = "Matin",
         icon        = "🌄",
-        accentColor = QuranColors.GoldBlaze,
+        accentColor = Color(0xFFFFE27A), // GoldBlaze — fixed, static data isn't theme-reactive
         items = listOf(
             AdhkarItem("اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ ۚ لَا تَأْخُذُهُ سِنَةٌ وَلَا نَوْمٌ ۚ لَّهُ مَا فِي السَّمَاوَاتِ وَمَا فِي الْأَرْضِ ۗ مَن ذَا الَّذِي يَشْفَعُ عِندَهُ إِلَّا بِإِذْنِهِ ۚ يَعْلَمُ مَا بَيْنَ أَيْدِيهِمْ وَمَا خَلْفَهُمْ ۖ وَلَا يُحِيطُونَ بِشَيْءٍ مِّنْ عِلْمِهِ إِلَّا بِمَا شَاءَ ۚ وَسِعَ كُرْسِيُّهُ السَّمَاوَاتِ وَالْأَرْضَ ۖ وَلَا يَئُودُهُ حِفْظُهُمَا ۚ وَهُوَ الْعَلِيُّ الْعَظِيمُ", "البقرة: ٢٥٥", 1),
             AdhkarItem("بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ. قُلْ هُوَ اللَّهُ أَحَدٌ (1) اللَّهُ الصَّمَدُ (2) لَمْ يَلِدْ وَلَمْ يُولَدْ (3) وَلَمْ يَكُنْ لَهُ كُفُوًا أَحَدٌ (4)", "الإخلاص", 3),
@@ -90,7 +90,7 @@ val ADHKAR_CATEGORIES = listOf(
         titleArabic = "أذكار المساء",
         titleFr     = "Soir",
         icon        = "🌙",
-        accentColor = QuranColors.GoldBright,
+        accentColor = Color(0xFFE8B84A), // GoldBright — fixed, static data isn't theme-reactive
         items = listOf(
             AdhkarItem("اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ ۚ لَا تَأْخُذُهُ سِنَةٌ وَلَا نَوْمٌ ۚ لَهُ مَا فِي السَّمَاوَاتِ وَمَا فِي الْأَرْضِ ۗ مَن ذَا الَّذِي يَشْفَعُ عِندَهُ إِلَّا بِإِذْنِهِ ۚ يَعْلَمُ مَا بَيْنَ أَيْدِيهِمْ وَمَا خَلْفَهُمْ ۖ وَلَا يُحِيطُونَ بِشَيْءٍ مِّنْ عِلْمِهِ إِلَّا بِمَا شَاءَ ۚ وَسِعَ كُرْسِيُّهُ السَّمَاوَاتِ وَالْأَرْضَ ۖ وَلَا يَئُودُهُ حِفْظُهُمَا ۚ وَهُوَ الْعَلِيُّ الْعَظِيمُ", "البقرة: ٢٥٥", 1),
             AdhkarItem("أَمْسَيْنَا وَأَمْسَى الْمُلْكُ لِلَّهِ وَالْحَمْدُ لِلَّهِ، لا إله إلا الله وحده لا شريك له، له الملك وله الحمد، وهو على كل شيء قدير", "مسلم", 1),
@@ -117,7 +117,7 @@ val ADHKAR_CATEGORIES = listOf(
         titleArabic = "أذكار النوم",
         titleFr     = "Sommeil",
         icon        = "🌟",
-        accentColor = QuranColors.Gold,
+        accentColor = Color(0xFFC8921E), // Gold — fixed, static data isn't theme-reactive
         items = listOf(
             AdhkarItem("بِاسْمِكَ اللَّهُمَّ أَمُوتُ وَأَحْيَا", "البخاري", 1),
             AdhkarItem("اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ ۚ لَا تَأْخُذُهُ سِنَةٌ وَلَا نَوْمٌ ۚ لَهُ مَا فِي السَّمَاوَاتِ وَمَا فِي الْأَرْضِ ۗ مَن ذَا الَّذِي يَشْفَعُ عِندَهُ إِلَّا بِإِذْنِهِ ۚ يَعْلَمُ مَا بَيْنَ أَيْدِيهِمْ وَمَا خَلْفَهُمْ ۖ وَلَا يُحِيطُونَ بِشَيْءٍ مِّنْ عِلْمِهِ إِلَّا بِمَا شَاءَ ۚ وَسِعَ كُرْسِيُّهُ السَّمَاوَاتِ وَالْأَرْضَ ۖ وَلَا يَئُودُهُ حِفْظُهُمَا ۚ وَهُوَ الْعَلِيُّ الْعَظِيمُ", "البقرة: ٢٥٥", 1),
@@ -139,7 +139,7 @@ val ADHKAR_CATEGORIES = listOf(
         titleArabic   = "أذكار الصلاة",
         titleFr       = "Après la prière",
         icon          = "🤲",
-        accentColor   = QuranColors.GoldWarm,
+        accentColor   = Color(0xFFA87830), // GoldWarm — fixed, static data isn't theme-reactive
         subCategories = listOf(
 
             AdhkarSubCategory(
@@ -500,7 +500,7 @@ val ADHKAR_CATEGORIES = listOf(
         titleArabic = "أدعية قرآنية",
         titleFr     = "Duas coraniques",
         icon        = "📖",
-        accentColor = QuranColors.GoldAccent,
+        accentColor = Color(0xFFF5D888), // GoldAccent — fixed, static data isn't theme-reactive
         items = listOf(
             AdhkarItem("رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ النَّارِ", "البقرة: ٢٠١", 1),
             AdhkarItem("رَبَّنَا لَا تُؤَاخِذْنَا إِن نَّسِينَا أَوْ أَخْطَأْنَا", "البقرة: ٢٨٦", 1),
@@ -624,7 +624,7 @@ fun AdhkarListScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Brush.verticalGradient(listOf(QuranColors.AppBg, Color(0xFF1A0C00), QuranColors.AppBg)))
+            .background(Brush.verticalGradient(listOf(QuranColors.AppBg, QuranColors.Panel, QuranColors.AppBg)))
     ) {
         Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
         AdhkarTopBar(title = "الأذكار والأدعية", subtitle = "Adhkar & Duas", onBack = onBack)
@@ -672,7 +672,7 @@ fun AdhkarSubCategoryScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Brush.verticalGradient(listOf(QuranColors.AppBg, Color(0xFF1A0C00), QuranColors.AppBg)))
+            .background(Brush.verticalGradient(listOf(QuranColors.AppBg, QuranColors.Panel, QuranColors.AppBg)))
     ) {
         Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
         AdhkarTopBar(
@@ -706,7 +706,7 @@ fun AdhkarSubCategoryScreen(
                     Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(18.dp))
-                        .background(Brush.horizontalGradient(listOf(Color(0xFF1E1000), Color(0xFF0E0800))))
+                        .background(Brush.horizontalGradient(listOf(QuranColors.Panel, QuranColors.AppBg)))
                         .border(1.dp,
                             Brush.verticalGradient(listOf(
                                 category.accentColor.copy(alpha = glowAlpha),
@@ -807,7 +807,7 @@ fun AdhkarDetailScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Brush.verticalGradient(listOf(QuranColors.AppBg, Color(0xFF1A0C00), QuranColors.AppBg)))
+            .background(Brush.verticalGradient(listOf(QuranColors.AppBg, QuranColors.Panel, QuranColors.AppBg)))
     ) {
         Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
 
@@ -852,7 +852,7 @@ fun AdhkarDetailScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .clip(RoundedCornerShape(26.dp))
-                    .background(Brush.verticalGradient(listOf(Color(0xFF1E1200), Color(0xFF0C0700))))
+                    .background(Brush.verticalGradient(listOf(QuranColors.Panel, QuranColors.AppBg)))
                     .border(1.dp,
                         Brush.verticalGradient(listOf(
                             accentColor.copy(alpha = glowAlpha * 0.7f),
@@ -1022,7 +1022,7 @@ fun AdhkarCategoryRow(
 
     Box(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp))
-            .background(Brush.horizontalGradient(listOf(Color(0xFF1E1000), Color(0xFF0E0800))))
+            .background(Brush.horizontalGradient(listOf(QuranColors.Panel, QuranColors.AppBg)))
             .border(1.dp,
                 Brush.verticalGradient(listOf(
                     category.accentColor.copy(alpha = glowAlpha),
@@ -1115,7 +1115,7 @@ fun NavButton(
                 if (highlighted && enabled)
                     Brush.horizontalGradient(listOf(accentColor.copy(alpha = 0.22f), accentColor.copy(alpha = 0.08f)))
                 else
-                    Brush.horizontalGradient(listOf(Color(0xFF1C1100), Color(0xFF0E0800)))
+                    Brush.horizontalGradient(listOf(QuranColors.Panel, QuranColors.AppBg))
             )
             .border(0.5.dp,
                 if (enabled) accentColor.copy(alpha = if (highlighted) 0.6f else 0.3f)
@@ -1144,7 +1144,7 @@ fun AdhkarTopBar(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Brush.horizontalGradient(listOf(Color(0xFF2A1A04), QuranColors.AppBg, Color(0xFF2A1A04))))
+            .background(Brush.horizontalGradient(listOf(QuranColors.Panel, QuranColors.AppBg, QuranColors.Panel)))
     ) {
         Row(
             modifier = Modifier
@@ -1170,7 +1170,7 @@ fun AdhkarTopBar(
 fun AdhkarBottomSpacer() {
     Box(
         Modifier.fillMaxWidth()
-            .background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xFF1A0C00))))
+            .background(Brush.verticalGradient(listOf(Color.Transparent, QuranColors.AppBg)))
     ) {
         Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
     }

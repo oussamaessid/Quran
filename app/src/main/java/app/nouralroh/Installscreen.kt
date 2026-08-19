@@ -48,7 +48,7 @@ fun InstallScreen(
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
-                    listOf(Color(0xFF080400), Color(0xFF120900), Color(0xFF080400))
+                    listOf(QuranColors.AppBg, QuranColors.Panel, QuranColors.AppBg)
                 )
             )
     ) {
@@ -231,6 +231,7 @@ private fun CrescentSeal() {
         infiniteRepeatable(tween(20_000, easing = LinearEasing), RepeatMode.Restart), "r")
     val pulse by inf.animateFloat(0.4f, 1f,
         infiniteRepeatable(tween(1600), RepeatMode.Reverse), "p")
+    val goldColor = QuranColors.Gold
 
     Box(
         Modifier
@@ -240,7 +241,7 @@ private fun CrescentSeal() {
                 val cy = size.height / 2f
                 for (i in 1..3) {
                     drawCircle(
-                        color  = QuranColors.Gold.copy(alpha = pulse * 0.15f / i),
+                        color  = goldColor.copy(alpha = pulse * 0.15f / i),
                         radius = size.minDimension / 2f * (0.7f + i * 0.1f),
                         style  = Stroke(0.8f)
                     )
@@ -255,7 +256,7 @@ private fun CrescentSeal() {
                     pts.drop(1).forEach { lineTo(it.x, it.y) }
                     close()
                 }
-                drawPath(path, QuranColors.Gold.copy(alpha = 0.35f), style = Stroke(1.dp.toPx()))
+                drawPath(path, goldColor.copy(alpha = 0.35f), style = Stroke(1.dp.toPx()))
             }
             .rotate(rot * 0.05f),
         contentAlignment = Alignment.Center

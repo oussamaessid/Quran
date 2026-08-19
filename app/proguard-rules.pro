@@ -47,3 +47,9 @@
 -keep class * implements com.google.gson.JsonSerializer
 -keep class * implements com.google.gson.JsonDeserializer
 -dontwarn com.google.gson.**
+
+# The AppWidget receiver is instantiated by the OS from the manifest by class name, and
+# WorkManager instantiates DuaWidgetUpdateWorker by reflection from its stored class name
+# — without these, R8 can rename/strip them in a release build and the widget silently
+# fails to add or update (same class of bug as the Gson rule above).
+-keep class app.nouralroh.widget.** { *; }

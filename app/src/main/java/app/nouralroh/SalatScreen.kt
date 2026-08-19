@@ -56,7 +56,7 @@ fun SalatScreen(
     Box(
         Modifier.fillMaxSize().background(
             Brush.radialGradient(
-                colors = listOf(Color(0xFF2A1A04), Color(0xFF1A0C00), Color(0xFF0E0800)),
+                colors = listOf(QuranColors.Panel, QuranColors.AppBg, QuranColors.AppBg),
                 radius = 1800f,
             )
         )
@@ -99,7 +99,7 @@ fun SalatScreen(
                     label       = "RAK'AHS",
                     sublabel    = "/ $targetRakaat",
                     color       = if (s.prayerComplete) QuranColors.Gold else QuranColors.GoldBlaze,
-                    bgGradient  = Brush.verticalGradient(listOf(Color(0xFF2C1600), Color(0xFF1A0C00))),
+                    bgGradient  = Brush.verticalGradient(listOf(QuranColors.Panel, QuranColors.AppBg)),
                     borderBrush = if (s.prayerComplete)
                         Brush.verticalGradient(listOf(QuranColors.Gold, QuranColors.GoldBlaze.copy(.4f)))
                     else
@@ -113,7 +113,7 @@ fun SalatScreen(
                     label       = "SUJOOD",
                     sublabel    = "dans rak'ah",
                     color       = QuranColors.GoldWarm,
-                    bgGradient  = Brush.verticalGradient(listOf(Color(0xFF1E1000), Color(0xFF120800))),
+                    bgGradient  = Brush.verticalGradient(listOf(QuranColors.Panel, QuranColors.AppBg)),
                     borderBrush = Brush.verticalGradient(listOf(
                         QuranColors.GoldEmber.copy(.4f), QuranColors.PanelBorder.copy(.2f))),
                     pulseKey    = s.pulseSujood,
@@ -236,7 +236,7 @@ fun SalatLightMeter(
     Box(
         Modifier.fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(Brush.verticalGradient(listOf(Color(0xFF1E1000), Color(0xFF0E0800))))
+            .background(Brush.verticalGradient(listOf(QuranColors.Panel, QuranColors.AppBg)))
             .border(1.dp,
                 if (isDark)
                     Brush.verticalGradient(listOf(Color(0xFFFF4444).copy(.7f), Color(0xFFFF4444).copy(.2f)))
@@ -276,7 +276,7 @@ fun SalatLightMeter(
             Box(
                 Modifier.fillMaxWidth().height(16.dp)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(Color(0xFF080400))
+                    .background(QuranColors.AppBg)
                     .border(0.5.dp, QuranColors.PanelBorder.copy(.3f), RoundedCornerShape(8.dp))
             ) {
                 Box(
@@ -338,7 +338,7 @@ fun SalatPrayerSelector(selected: PrayerConfig, onSelect: (PrayerConfig) -> Unit
                 colors = FilterChipDefaults.filterChipColors(
                     selectedContainerColor = QuranColors.GoldBlaze,
                     selectedLabelColor     = QuranColors.Panel,
-                    containerColor         = Color(0xFF1E1000),
+                    containerColor         = QuranColors.Panel,
                     labelColor             = QuranColors.GoldDim),
                 border = FilterChipDefaults.filterChipBorder(
                     enabled = true, selected = isSel,
@@ -382,7 +382,7 @@ fun SalatProgressBar(progress: Float, rakaat: Int, target: Int, complete: Boolea
     Column(Modifier.fillMaxWidth()) {
         Box(Modifier.fillMaxWidth().height(8.dp)
             .clip(RoundedCornerShape(4.dp))
-            .background(Color(0xFF1E1000))
+            .background(QuranColors.Panel)
             .border(1.dp, QuranColors.PanelBorder.copy(.4f), RoundedCornerShape(4.dp))) {
             Box(
                 Modifier.fillMaxWidth(progress).fillMaxHeight()
@@ -410,7 +410,7 @@ fun SalatProgressBar(progress: Float, rakaat: Int, target: Int, complete: Boolea
 fun SalatInstructionsCard(hasSensor: Boolean) {
     Box(Modifier.fillMaxWidth()
         .clip(RoundedCornerShape(16.dp))
-        .background(Brush.verticalGradient(listOf(Color(0xFF1E1000), Color(0xFF0E0800))))
+        .background(Brush.verticalGradient(listOf(QuranColors.Panel, QuranColors.AppBg)))
         .border(1.dp, Brush.verticalGradient(listOf(
             QuranColors.PanelBorder.copy(.5f), QuranColors.PanelBorder.copy(.2f))),
             RoundedCornerShape(16.dp))
@@ -479,7 +479,7 @@ fun SalatControlButtons(
                     .clickable { onStart() }
                     .padding(horizontal = 32.dp, vertical = 16.dp),
                     contentAlignment = Alignment.Center) {
-                    Text("▶  DÉMARRER", color = Color(0xFF0E0800), fontSize = 13.sp,
+                    Text("▶  DÉMARRER", color = QuranColors.AppBg, fontSize = 13.sp,
                         letterSpacing = 2.sp, fontWeight = FontWeight.Bold)
                 }
             }

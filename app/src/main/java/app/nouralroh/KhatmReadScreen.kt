@@ -189,7 +189,7 @@ fun KhatmReadScreen(
                     Box(
                         Modifier
                             .clip(RoundedCornerShape(22.dp))
-                            .background(Color(0xCC0E0800))
+                            .background(QuranColors.AppBg.copy(alpha = 0.85f))
                             .border(
                                 0.5.dp,
                                 QuranColors.GoldBlaze.copy(alpha = 0.4f),

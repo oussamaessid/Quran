@@ -62,6 +62,7 @@ fun PrayerTimesWidget(pt: PrayerTimes) {
         infiniteRepeatable(tween(1800, easing = FastOutSlowInEasing), RepeatMode.Reverse),
         label = "glow"
     )
+    val goldColor = QuranColors.Gold
 
     Box(
         Modifier
@@ -71,7 +72,7 @@ fun PrayerTimesWidget(pt: PrayerTimes) {
             .clip(RoundedCornerShape(20.dp))
             .background(
                 Brush.verticalGradient(
-                    listOf(Color(0xFF1E1005), QuranColors.Panel, Color(0xFF160900))
+                    listOf(QuranColors.Panel, QuranColors.Panel, QuranColors.AppBg)
                 )
             )
             .border(
@@ -97,7 +98,7 @@ fun PrayerTimesWidget(pt: PrayerTimes) {
                         .size(96.dp)
                         .drawBehind {
                             drawCircle(
-                                color  = QuranColors.Gold.copy(alpha = glow),
+                                color  = goldColor.copy(alpha = glow),
                                 radius = size.minDimension / 2f + 8f,
                                 style  = Stroke(6f)
                             )

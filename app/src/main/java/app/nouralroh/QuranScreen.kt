@@ -290,7 +290,7 @@ fun NoNetworkToast(message: String, onDismiss: () -> Unit) {
                 .clip(RoundedCornerShape(14.dp))
                 .background(
                     Brush.horizontalGradient(
-                        listOf(Color(0xFF1A0800), Color(0xFF2A1200), Color(0xFF1A0800))
+                        listOf(QuranColors.AppBg, QuranColors.Panel, QuranColors.AppBg)
                     )
                 )
                 .border(1.dp, QuranColors.GoldDim.copy(alpha = 0.6f), RoundedCornerShape(14.dp))
@@ -337,13 +337,14 @@ fun AyahAudioTopBar(
         animationSpec = infiniteRepeatable(tween(900), RepeatMode.Reverse),
         label = "ba"
     )
+    val goldColor = QuranColors.Gold
 
     Column(modifier = Modifier
         .fillMaxWidth()
         .background(QuranColors.Panel)
         .drawBehind {
             drawLine(
-                color = QuranColors.Gold.copy(alpha = borderAlpha),
+                color = goldColor.copy(alpha = borderAlpha),
                 start = Offset(0f, size.height),
                 end = Offset(size.width, size.height),
                 strokeWidth = 1.5.dp.toPx()
@@ -503,13 +504,14 @@ fun SurahAudioTopBar(
         animationSpec = infiniteRepeatable(tween(900), RepeatMode.Reverse),
         label = "ba"
     )
+    val goldColor = QuranColors.Gold
 
     Column(modifier = Modifier
         .fillMaxWidth()
         .background(QuranColors.Panel)
         .drawBehind {
             drawLine(
-                color = QuranColors.Gold.copy(alpha = borderAlpha),
+                color = goldColor.copy(alpha = borderAlpha),
                 start = Offset(0f, size.height),
                 end = Offset(size.width, size.height),
                 strokeWidth = 1.5.dp.toPx()
@@ -1107,12 +1109,13 @@ fun MushafPageContent(
 
 @Composable
 fun PageTopStrip(quranPage: QuranPage, height: Dp) {
+    val goldColor = QuranColors.Gold
     Column(
         Modifier
             .fillMaxWidth()
             .height(height)
             .drawBehind {
-                val gold = QuranColors.Gold.copy(alpha = 0.50f)
+                val gold = goldColor.copy(alpha = 0.50f)
                 val len  = (size.height * 0.55f).coerceAtLeast(4f)
                 val th   = 1.dp.toPx()
                 drawLine(gold, Offset(0f, 0f),         Offset(len, 0f),              th)

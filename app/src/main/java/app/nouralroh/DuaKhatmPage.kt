@@ -18,10 +18,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.nouralroh.ui.QuranFonts
 
-// ── Couleurs ──────────────────────────────────────────────────────────────────
-private val DuaRed   = Color(0xFFAA1111)
-private val DuaBlack = Color(0xFF1A1A1A)
-
 // ── Mots-clés à colorier en rouge ────────────────────────────────────────────
 private val RED_KEYWORDS = listOf(
     "اللَّهُمَّ", "اللهم", "رَبَّنَا"
@@ -33,7 +29,7 @@ private val DUA_PART_1 = """اللَّهُمَّ ارْحَمْنِي بالقُ
 // ── Page 606 ──────────────────────────────────────────────────────────────────
 private val DUA_PART_2 = """وَعَزَائِمِ مَغْفِرَتِكَ وَالسَّلاَمَةَ مِنْ كُلِّ إِثْمٍ وَالغَنِيمَةَ مِنْ كُلِّ بِرٍّ وَالفَوْزَ بِالجَنَّةِ وَالنَّجَاةَ مِنَ النَّارِ ۞ اللَّهُمَّ أَحْسِنْ عَاقِبَتَنَا فِي الأُمُورِ كُلِّهَا وَأجِرْنَا مِنْ خِزْيِ الدُّنْيَا وَعَذَابِ الآخِرَةِ ۞ اللَّهُمَّ اقْسِمْ لَنَا مِنْ خَشْيَتِكَ مَاتَحُولُ بِهِ بَيْنَنَا وَبَيْنَ مَعْصِيَتِكَ وَمِنْ طَاعَتِكَ مَاتُبَلِّغُنَا بِهَا جَنَّتَكَ وَمِنَ اليَقِينِ مَاتُهَوِّنُ بِهِ عَلَيْنَا مَصَائِبَ الدُّنْيَا وَمَتِّعْنَا بِأَسْمَاعِنَا وَأَبْصَارِنَا وَقُوَّتِنَا مَاأَحْيَيْتَنَا وَاجْعَلْهُ الوَارِثَ مِنَّا وَاجْعَلْ ثَأْرَنَا عَلَى مَنْ ظَلَمَنَا وَانْصُرْنَا عَلَى مَنْ عَادَانَا وَلاَ تجْعَلْ مُصِيبَتَنَا فِي دِينِنَا وَلاَ تَجْعَلِ الدُّنْيَا أَكْبَرَ هَمِّنَا وَلَا مَبْلَغَ عِلْمِنَا وَلاَ تُسَلِّطْ عَلَيْنَا مَنْ لَا يَرْحَمُنَا ۞ اللَّهُمَّ لَا تَدَعْ لَنَا ذَنْبًا إِلَّا غَفَرْتَهُ وَلَا هَمَّا إِلَّا فَرَّجْتَهُ وَلَا دَيْنًا إِلَّا قَضَيْتَهُ وَلَا حَاجَةً مِنْ حَوَائِجِ الدُّنْيَا وَالآخِرَةِ إِلَّا قَضَيْتَهَا يَاأَرْحَمَ الرَّاحِمِينَ ۞ رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ النَّارِ وَصَلَّى اللهُ عَلَى سَيِّدِنَا وَنَبِيِّنَا مُحَمَّدٍ وَعَلَى آلِهِ وَأَصْحَابِهِ الأَخْيَارِ وَسَلَّمَ تَسْلِيمًا كَثِيراً."""
 
-private fun buildColoredText(text: String): AnnotatedString {
+private fun buildColoredText(text: String, inkColor: Color, accentColor: Color): AnnotatedString {
     return buildAnnotatedString {
         var remaining = text
         while (remaining.isNotEmpty()) {
@@ -45,16 +41,16 @@ private fun buildColoredText(text: String): AnnotatedString {
                 .minByOrNull { it.first }
 
             if (match == null) {
-                withStyle(SpanStyle(color = DuaBlack)) { append(remaining) }
+                withStyle(SpanStyle(color = inkColor)) { append(remaining) }
                 break
             }
             val (idx, kw) = match
             if (idx > 0) {
-                withStyle(SpanStyle(color = DuaBlack)) {
+                withStyle(SpanStyle(color = inkColor)) {
                     append(remaining.substring(0, idx))
                 }
             }
-            withStyle(SpanStyle(color = DuaRed, fontWeight = FontWeight.Bold)) {
+            withStyle(SpanStyle(color = accentColor, fontWeight = FontWeight.Bold)) {
                 append(kw)
             }
             remaining = remaining.substring(idx + kw.length)
@@ -78,7 +74,9 @@ fun DuaKhatmPageContent(pageNumber: Int, topStripH: Dp, bottomStripH: Dp) {
 
     val isPage605 = pageNumber == 605
     val text    = if (isPage605) DUA_PART_1 else DUA_PART_2
-    val colored = buildColoredText(text)
+    val inkColor = QuranColors.ArabicText
+    val accentColor = QuranColors.DuaAccent
+    val colored = buildColoredText(text, inkColor, accentColor)
 
     Column(
         Modifier
@@ -103,7 +101,7 @@ fun DuaKhatmPageContent(pageNumber: Int, topStripH: Dp, bottomStripH: Dp) {
                     Text(
                         text = "دُعَاءُ خَتْمِ القُرْآنِ الكَرِيمِ",
                         fontSize = (screenW * 0.058f).coerceIn(18f, 26f).sp,
-                        color = DuaRed,
+                        color = accentColor,
                         fontWeight = FontWeight.Bold,
                         fontFamily = QuranFonts.AmiriQuran,
                         style = TextStyle(textDirection = TextDirection.Rtl),

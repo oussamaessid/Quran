@@ -33,6 +33,7 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:launchMode="singleTop"
             android:label="@string/app_name"
             android:theme="@style/Theme.Quran"
             android:windowSoftInputMode="adjustResize"
@@ -44,6 +45,18 @@
             </intent-filter>
 
         </activity>
+
+        <receiver
+            android:name=".widget.DuaGlanceWidgetReceiver"
+            android:exported="false"
+            android:label="@string/dua_widget_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/dua_widget_info" />
+        </receiver>
 
         <service
             android:name=".AudioPlaybackService"

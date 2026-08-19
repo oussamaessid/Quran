@@ -44,6 +44,7 @@ fun AyahAudioChoiceBar(
         animationSpec = infiniteRepeatable(tween(1100), RepeatMode.Reverse),
         label         = "choiceAlpha"
     )
+    val goldColor = QuranColors.Gold
 
     Box(
         modifier = Modifier
@@ -51,12 +52,12 @@ fun AyahAudioChoiceBar(
             .clip(RoundedCornerShape(12.dp))
             .background(
                 Brush.verticalGradient(
-                    listOf(Color(0xFF2A1800), QuranColors.Panel, Color(0xFF1A0E00))
+                    listOf(QuranColors.Panel, QuranColors.Panel, QuranColors.AppBg)
                 )
             )
             .drawBehind {
                 drawRoundRect(
-                    color        = QuranColors.Gold.copy(alpha = borderAlpha),
+                    color        = goldColor.copy(alpha = borderAlpha),
                     topLeft      = Offset.Zero,
                     size         = Size(size.width, size.height),
                     cornerRadius = CornerRadius(12.dp.toPx()),

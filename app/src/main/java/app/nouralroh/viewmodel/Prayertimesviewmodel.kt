@@ -88,8 +88,6 @@ class PrayerTimesViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch { fetchTimings(savedLatitude, savedLongitude) }
     }
 
-    // Recalcule la prochaine prière depuis l'heure actuelle sans refaire d'appel réseau.
-    // À appeler à chaque ouverture de l'écran d'accueil.
     fun refreshNextPrayer() {
         val current = (_state.value as? UiState.Success)?.data ?: return
         val (next, nextT) = computeNext(listOf(
@@ -216,7 +214,6 @@ class PrayerTimesViewModel(app: Application) : AndroidViewModel(app) {
         }
         prefs.edit().putString(KEY_CITY, city).apply()
 
-        // Date Hijri avec noms des mois en arabe
         val hijriMonth = hijri.getJSONObject("month")
         val monthNum   = hijriMonth.optInt("number", 1).coerceIn(1, 12)
         val hijriStr   = "${hijri.getString("day")} " +

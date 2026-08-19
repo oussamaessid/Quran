@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">نور الروح</string>
+    <string name="dua_widget_label">Widget Duʿāʾ</string>
+    <string name="dua_widget_description">Affiche un Duʿāʾ qui change automatiquement sur votre écran d\'accueil, sans connexion Internet.</string>
 </resources>

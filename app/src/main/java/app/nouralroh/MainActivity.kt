@@ -1,6 +1,7 @@
 package app.nouralroh
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.LocationManager
 import android.os.Build
@@ -16,6 +17,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -29,21 +31,37 @@ import app.nouralroh.data.DataInstallManager
 import app.nouralroh.viewmodel.InstallViewModel
 import app.nouralroh.viewmodel.KhatmViewModel
 import app.nouralroh.viewmodel.SalatViewModel
+import app.nouralroh.widget.EXTRA_OPEN_SCREEN
+import app.nouralroh.widget.OPEN_SCREEN_HOME
 
 enum class AppScreen {
     INSTALL, HOME,
-    QURAN, QIBLA, TASBIH, ADHKAR, SALAT, AUDIO, KHATM, KHATM_READ
+    QURAN, QIBLA, TASBIH, ADHKAR, SALAT, AUDIO, KHATM, KHATM_READ,
+    SETTINGS, WIDGET_DUA
 }
 
 class MainActivity : ComponentActivity() {
 
     private lateinit var adManager: AdManager
 
+    // Set from onNewIntent() when the widget is tapped while the app is already running.
+    private var pendingOpenScreen by mutableStateOf<AppScreen?>(null)
+
+    private fun screenFromIntent(intent: Intent?): AppScreen? =
+        when (intent?.getStringExtra(EXTRA_OPEN_SCREEN)) {
+            OPEN_SCREEN_HOME -> AppScreen.HOME
+            else -> null
+        }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        pendingOpenScreen = screenFromIntent(intent)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        WindowCompat.getInsetsController(window, window.decorView)
-            .isAppearanceLightStatusBars = false
         KhatmNotificationHelper.createChannel(this)
 
         // ── Pub : init + App Open AVANT setContent ────────────────
@@ -52,15 +70,28 @@ class MainActivity : ComponentActivity() {
         // ↑ Chaîne : init → load → show → loadInter (tout automatique)
 
         setContent {
+            val darkTheme = isSystemInDarkTheme()
+            SideEffect {
+                WindowCompat.getInsetsController(window, window.decorView)
+                    .isAppearanceLightStatusBars = !darkTheme
+            }
+
             val installVm: InstallViewModel = viewModel()
             val salatVm: SalatViewModel     = viewModel()
             val khatmVm: KhatmViewModel     = viewModel()
 
             var currentScreen by remember {
                 mutableStateOf(
-                    if (DataInstallManager.isInstalled(this)) AppScreen.HOME
-                    else AppScreen.INSTALL
+                    if (!DataInstallManager.isInstalled(this)) AppScreen.INSTALL
+                    else screenFromIntent(intent) ?: AppScreen.HOME
                 )
+            }
+            // Widget deep link is ignored while the mandatory first-run data install hasn't completed.
+            LaunchedEffect(pendingOpenScreen) {
+                pendingOpenScreen?.let { screen ->
+                    if (currentScreen != AppScreen.INSTALL) currentScreen = screen
+                    pendingOpenScreen = null
+                }
             }
             var khatmStartPage by remember { mutableStateOf(1) }
 
@@ -116,6 +147,7 @@ class MainActivity : ComponentActivity() {
                 onDispose { lifecycle.removeObserver(obs) }
             }
 
+            QuranTheme(darkTheme = darkTheme) {
             Box(
                 Modifier
                     .fillMaxSize()
@@ -151,7 +183,8 @@ class MainActivity : ComponentActivity() {
                             onOpenAdhkar = { goTo(AppScreen.ADHKAR) },
                             onOpenKhatm  = { goTo(AppScreen.KHATM)  },
                             onOpenSalat  = { goTo(AppScreen.SALAT)  },
-                            onOpenAudio  = { goTo(AppScreen.AUDIO)  }
+                            onOpenAudio  = { goTo(AppScreen.AUDIO)  },
+                            onOpenSettings = { currentScreen = AppScreen.SETTINGS }
                         )
 
                         AppScreen.QURAN  -> QuranScreen(
@@ -186,8 +219,16 @@ class MainActivity : ComponentActivity() {
                         AppScreen.AUDIO -> AudioScreen(
                             onBack = { currentScreen = AppScreen.HOME }
                         )
+                        AppScreen.SETTINGS -> SettingsScreen(
+                            onBack = { currentScreen = AppScreen.HOME },
+                            onOpenWidgetDua = { currentScreen = AppScreen.WIDGET_DUA }
+                        )
+                        AppScreen.WIDGET_DUA -> WidgetDuaScreen(
+                            onBack = { currentScreen = AppScreen.SETTINGS }
+                        )
                     }
                 }
+            }
             }
         }
     }

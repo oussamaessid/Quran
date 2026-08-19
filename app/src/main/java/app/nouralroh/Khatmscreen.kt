@@ -113,7 +113,7 @@ fun KhatmScreen(
                     Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0xFF1A0800))
+                        .background(QuranColors.AppBg)
                         .border(0.5.dp, QuranColors.PanelBorder, RoundedCornerShape(12.dp))
                         .clickable { khatmVm.deletePlan() }
                         .padding(vertical = 14.dp),
@@ -208,7 +208,7 @@ private fun KhatmSetupCard(onCreate: (Int) -> Unit) {
             .fillMaxWidth()
             .shadow(14.dp, RoundedCornerShape(22.dp), ambientColor = Color.Black, spotColor = QuranColors.Gold.copy(alpha = 0.35f))
             .clip(RoundedCornerShape(22.dp))
-            .background(Brush.verticalGradient(listOf(Color(0xFF1E1000), Color(0xFF0E0800))))
+            .background(Brush.verticalGradient(listOf(QuranColors.Panel, QuranColors.AppBg)))
             .border(
                 1.dp,
                 Brush.verticalGradient(listOf(
@@ -239,7 +239,7 @@ private fun KhatmSetupCard(onCreate: (Int) -> Unit) {
                 Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(14.dp))
-                    .background(Color(0xFF2A1400).copy(alpha = 0.5f))
+                    .background(QuranColors.GoldSubtle.copy(alpha = 0.5f))
                     .padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -379,7 +379,7 @@ private fun KhatmProgressCard(
             .fillMaxWidth()
             .shadow(14.dp, RoundedCornerShape(20.dp), ambientColor = Color.Black, spotColor = QuranColors.Gold.copy(alpha = 0.35f))
             .clip(RoundedCornerShape(20.dp))
-            .background(Brush.verticalGradient(listOf(Color(0xFF1E1000), Color(0xFF0E0800))))
+            .background(Brush.verticalGradient(listOf(QuranColors.Panel, QuranColors.AppBg)))
             .border(
                 1.dp,
                 Brush.verticalGradient(listOf(
@@ -433,19 +433,23 @@ private fun KhatmCircularProgress(percent: Float) {
         animationSpec = tween(1200, easing = EaseOutCubic),
         label         = "circPct"
     )
+    val goldDimColor   = QuranColors.GoldDim
+    val goldBlazeColor = QuranColors.GoldBlaze
+    val goldWarmColor  = QuranColors.GoldWarm
+    val goldColor      = QuranColors.Gold
     Box(Modifier.size(100.dp), contentAlignment = Alignment.Center) {
         Canvas(Modifier.fillMaxSize()) {
             val stroke = 8.dp.toPx()
             val inset  = stroke / 2f
             val sz     = androidx.compose.ui.geometry.Size(size.width - stroke, size.height - stroke)
             drawArc(
-                color      = QuranColors.GoldDim.copy(alpha = 0.2f),
+                color      = goldDimColor.copy(alpha = 0.2f),
                 startAngle = 0f, sweepAngle = 360f, useCenter = false,
                 topLeft    = Offset(inset, inset), size = sz,
                 style      = Stroke(stroke, cap = StrokeCap.Round)
             )
             drawArc(
-                brush      = Brush.sweepGradient(listOf(QuranColors.GoldBlaze, QuranColors.GoldWarm, QuranColors.Gold)),
+                brush      = Brush.sweepGradient(listOf(goldBlazeColor, goldWarmColor, goldColor)),
                 startAngle = -90f, sweepAngle = animPct * 360f, useCenter = false,
                 topLeft    = Offset(inset, inset), size = sz,
                 style      = Stroke(stroke, cap = StrokeCap.Round)
@@ -575,7 +579,7 @@ private fun KhatmTodayCard(
             .fillMaxWidth()
             .shadow(14.dp, RoundedCornerShape(20.dp), ambientColor = Color.Black, spotColor = QuranColors.Gold.copy(alpha = 0.35f))
             .clip(RoundedCornerShape(20.dp))
-            .background(Brush.verticalGradient(listOf(Color(0xFF1E1000), Color(0xFF0E0800))))
+            .background(Brush.verticalGradient(listOf(QuranColors.Panel, QuranColors.AppBg)))
             .border(
                 if (isTodayComplete) 1.dp else 0.5.dp,
                 if (isTodayComplete)
@@ -823,9 +827,9 @@ private fun KhatmPageNode(
                 .background(
                     when {
                         done      -> Brush.radialGradient(listOf(QuranColors.GoldWarm, QuranColors.GoldBlaze))
-                        isCurrent -> Brush.radialGradient(listOf(Color(0xFF2A1400), Color(0xFF160B00)))
+                        isCurrent -> Brush.radialGradient(listOf(QuranColors.Panel, QuranColors.AppBg))
                         isBonus   -> Brush.radialGradient(listOf(Color(0xFF0A1A0A), Color(0xFF0A1A0A)))
-                        else      -> Brush.radialGradient(listOf(Color(0xFF1C0E00), Color(0xFF1C0E00)))
+                        else      -> Brush.radialGradient(listOf(QuranColors.AppBg, QuranColors.AppBg))
                     }
                 )
                 .border(
@@ -843,9 +847,9 @@ private fun KhatmPageNode(
         ) {
             when {
                 done -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("✓", fontSize = 11.sp, color = Color(0xFF1A0F00), fontWeight = FontWeight.Bold)
+                    Text("✓", fontSize = 11.sp, color = QuranColors.AppBg, fontWeight = FontWeight.Bold)
                     Text(
-                        "$page", fontSize = 10.sp, color = Color(0xFF1A0F00),
+                        "$page", fontSize = 10.sp, color = QuranColors.AppBg,
                         fontWeight = FontWeight.SemiBold
                     )
                 }
@@ -1052,7 +1056,7 @@ private fun EditUnitsPerDayDialog(
         Box(
             Modifier
                 .clip(RoundedCornerShape(22.dp))
-                .background(Brush.verticalGradient(listOf(Color(0xFF1E1000), Color(0xFF0E0800))))
+                .background(Brush.verticalGradient(listOf(QuranColors.Panel, QuranColors.AppBg)))
                 .border(1.dp, QuranColors.Gold.copy(alpha = 0.5f), RoundedCornerShape(22.dp))
                 .padding(22.dp)
         ) {
@@ -1084,7 +1088,7 @@ private fun EditUnitsPerDayDialog(
                         Modifier
                             .weight(1f)
                             .clip(RoundedCornerShape(12.dp))
-                            .background(Color(0xFF1A0800))
+                            .background(QuranColors.AppBg)
                             .border(0.5.dp, QuranColors.PanelBorder, RoundedCornerShape(12.dp))
                             .clickable { onDismiss() }
                             .padding(vertical = 12.dp),
