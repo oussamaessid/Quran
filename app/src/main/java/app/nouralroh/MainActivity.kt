@@ -23,16 +23,20 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
+import androidx.glance.appwidget.updateAll
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.nouralroh.data.DataInstallManager
 import app.nouralroh.viewmodel.InstallViewModel
 import app.nouralroh.viewmodel.KhatmViewModel
 import app.nouralroh.viewmodel.SalatViewModel
+import app.nouralroh.widget.DuaGlanceWidget
 import app.nouralroh.widget.EXTRA_OPEN_SCREEN
 import app.nouralroh.widget.OPEN_SCREEN_HOME
+import kotlinx.coroutines.launch
 
 enum class AppScreen {
     INSTALL, HOME,
@@ -141,6 +145,14 @@ class MainActivity : ComponentActivity() {
                     if (event == Lifecycle.Event.ON_RESUME) {
                         permissionGranted = hasPermission()
                         gpsEnabled        = hasGps()
+                        // Foreground-triggered self-correction: OEM battery managers routinely
+                        // kill the WorkManager job and the OS's own updatePeriodMillis refresh
+                        // for a day or more, leaving the widget stuck on a stale Duʿāʾ. Opening
+                        // the app can't be blocked that way, so use it as an extra, reliable
+                        // trigger for DuaWidgetRotation.currentOrDue's self-correction.
+                        lifecycleScope.launch {
+                            runCatching { DuaGlanceWidget().updateAll(this@MainActivity) }
+                        }
                     }
                 }
                 lifecycle.addObserver(obs)

@@ -2,6 +2,9 @@ package app.nouralroh
 
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
+import android.os.PowerManager
+import android.provider.Settings
 import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -9,6 +12,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.BatteryAlert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,6 +27,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 
 private const val TAG = "WidgetDuaScreen"
 
@@ -35,8 +42,21 @@ private const val TAG = "WidgetDuaScreen"
 fun WidgetDuaScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     var showInstructions by remember { mutableStateOf(false) }
+    var batteryRestricted by remember { mutableStateOf(!isIgnoringBatteryOptimizations(context)) }
 
     BackHandler { onBack() }
+
+    // Re-check on resume: the user may be coming back from the system battery settings screen.
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    DisposableEffect(lifecycle) {
+        val obs = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                batteryRestricted = !isIgnoringBatteryOptimizations(context)
+            }
+        }
+        lifecycle.addObserver(obs)
+        onDispose { lifecycle.removeObserver(obs) }
+    }
 
     Column(
         modifier = Modifier.fillMaxSize().background(
@@ -96,6 +116,41 @@ fun WidgetDuaScreen(onBack: () -> Unit) {
             ) {
                 Text("Ajouter le widget", fontWeight = FontWeight.Bold, color = Color(0xFF1A0F00))
             }
+
+            if (batteryRestricted) {
+                Column(
+                    Modifier.fillMaxWidth()
+                        .background(QuranColors.Panel, RoundedCornerShape(16.dp))
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.BatteryAlert, null, tint = QuranColors.Gold)
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            "Le widget ne change pas de Duʿāʾ ?",
+                            fontWeight = FontWeight.Bold, fontSize = 14.sp, color = QuranColors.TextPrimary
+                        )
+                    }
+                    Text(
+                        "Certains téléphones bloquent les mises à jour en arrière-plan pour économiser " +
+                            "la batterie. Autorisez l'application à s'exécuter en arrière-plan pour que le " +
+                            "widget affiche régulièrement un nouveau Duʿāʾ.",
+                        fontSize = 12.sp, color = QuranColors.TextSecondary, lineHeight = 17.sp
+                    )
+                    Button(
+                        onClick = {
+                            Log.d(TAG, "Battery optimization exemption requested")
+                            requestIgnoreBatteryOptimizations(context)
+                        },
+                        modifier = Modifier.fillMaxWidth().height(44.dp),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = QuranColors.GoldDim)
+                    ) {
+                        Text("Autoriser l'arrière-plan", fontWeight = FontWeight.Bold, color = Color(0xFF1A0F00))
+                    }
+                }
+            }
         }
     }
 
@@ -132,4 +187,17 @@ private fun goToHomeScreen(context: Context) {
     }
     runCatching { context.startActivity(homeIntent) }
         .onFailure { Log.w(TAG, "Unable to launch home screen", it) }
+}
+
+private fun isIgnoringBatteryOptimizations(context: Context): Boolean {
+    val pm = context.getSystemService(Context.POWER_SERVICE) as PowerManager
+    return pm.isIgnoringBatteryOptimizations(context.packageName)
+}
+
+private fun requestIgnoreBatteryOptimizations(context: Context) {
+    val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+        data = Uri.parse("package:${context.packageName}")
+    }
+    runCatching { context.startActivity(intent) }
+        .onFailure { Log.w(TAG, "Unable to launch battery optimization request", it) }
 }

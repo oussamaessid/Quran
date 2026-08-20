@@ -12,6 +12,11 @@
 
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Lets us open the "ignore battery optimizations" system dialog so the Duʿāʾ widget's
+         rotation (WorkManager job) keeps running when OEM battery managers would otherwise
+         kill it for a day or more. Only ever triggered from an explicit user tap on the
+         Widget screen — see WidgetDuaScreen.kt. -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
     <uses-feature android:name="android.hardware.sensor.compass" android:required="false" />
     <uses-feature android:name="android.hardware.sensor.light" android:required="false" />
