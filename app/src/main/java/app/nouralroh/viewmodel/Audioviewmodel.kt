@@ -4,13 +4,18 @@ import android.app.Application
 import android.media.MediaPlayer
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import app.nouralroh.data.AudioCacheManager
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.net.URL
+
+private const val PLAYBACK_LOADING_TIMEOUT_MS = 15_000L
 
 // ─── Data Models ─────────────────────────────────────────────────────────────
 
@@ -54,7 +59,8 @@ data class PlayerState(
     val isLoading   : Boolean   = false,
     val currentMs   : Int       = 0,
     val durationMs  : Int       = 0,
-    val serverUrl   : String    = ""
+    val serverUrl   : String    = "",
+    val errorMessage: String?   = null
 )
 
 // ─── ViewModel ────────────────────────────────────────────────────────────────
@@ -79,9 +85,19 @@ class AudioViewModel(app: Application) : AndroidViewModel(app) {
     private val _activeSurahId = MutableStateFlow<Int?>(null)
     val activeSurahId = _activeSurahId.asStateFlow()
 
+    // Downloaded/downloading surah ids for the currently selected reciter — lets the
+    // Surahs list show a per-reciter offline state and lets playSurah() prefer the
+    // local file over streaming when it's already on disk.
+    private val _downloadedSurahIds = MutableStateFlow<Set<Int>>(emptySet())
+    val downloadedSurahIds = _downloadedSurahIds.asStateFlow()
+
+    private val _downloadingSurahIds = MutableStateFlow<Set<Int>>(emptySet())
+    val downloadingSurahIds = _downloadingSurahIds.asStateFlow()
+
     private var mediaPlayer : MediaPlayer? = null
     private var allReciters : List<Reciter> = emptyList()
     private var allSurahs   : List<SurahInfo> = emptyList()
+    private var loadingTimeoutJob: Job? = null
 
     init { loadData() }
 
@@ -144,6 +160,8 @@ class AudioViewModel(app: Application) : AndroidViewModel(app) {
     fun selectReciter(reciter: Reciter) {
         _selectedReciter.value = reciter
         _activeSurahId.value   = null
+        _downloadingSurahIds.value = emptySet()
+        _downloadedSurahIds.value = AudioCacheManager.cachedSurahIds(getApplication(), reciter.id)
     }
 
     fun updateSearch(query: String) {
@@ -157,10 +175,42 @@ class AudioViewModel(app: Application) : AndroidViewModel(app) {
 
     fun getSurahs(): List<SurahInfo> = allSurahs
 
+    // ── Téléchargement (écoute hors-ligne) ──────────────────────────────────────
+
+    fun downloadSurah(reciter: Reciter, surah: SurahInfo) {
+        if (surah.id in _downloadedSurahIds.value || surah.id in _downloadingSurahIds.value) return
+        _downloadingSurahIds.value = _downloadingSurahIds.value + surah.id
+
+        viewModelScope.launch {
+            val url = "${reciter.moshaf.server}${surah.id.toString().padStart(3, '0')}.mp3"
+            val success = withContext(Dispatchers.IO) {
+                runCatching { AudioCacheManager.getReciterSurahFile(getApplication(), reciter.id, surah.id, url) }
+                    .isSuccess
+            }
+            _downloadingSurahIds.value = _downloadingSurahIds.value - surah.id
+            if (success && reciter.id == _selectedReciter.value?.id) {
+                _downloadedSurahIds.value = _downloadedSurahIds.value + surah.id
+            }
+        }
+    }
+
+    fun deleteDownload(reciter: Reciter, surah: SurahInfo) {
+        AudioCacheManager.deleteReciterSurah(getApplication(), reciter.id, surah.id)
+        if (reciter.id == _selectedReciter.value?.id) {
+            _downloadedSurahIds.value = _downloadedSurahIds.value - surah.id
+        }
+    }
+
     // ── Playback ──────────────────────────────────────────────────────────────
 
     fun playSurah(reciter: Reciter, surah: SurahInfo) {
-        val url = "${reciter.moshaf.server}${surah.id.toString().padStart(3, '0')}.mp3"
+        loadingTimeoutJob?.cancel()
+
+        // Already downloaded → play straight from disk, no network/streaming needed.
+        val localFile = AudioCacheManager.localReciterSurahFile(getApplication(), reciter.id, surah.id)
+        val source = localFile?.absolutePath
+            ?: "${reciter.moshaf.server}${surah.id.toString().padStart(3, '0')}.mp3"
+
         _activeSurahId.value = surah.id
         _playerState.value   = PlayerState(
             isVisible   = true,
@@ -173,13 +223,15 @@ class AudioViewModel(app: Application) : AndroidViewModel(app) {
 
         mediaPlayer?.release()
         mediaPlayer = MediaPlayer().apply {
-            setDataSource(url)
+            setDataSource(source)
             setOnPreparedListener {
+                loadingTimeoutJob?.cancel()
                 start()
                 _playerState.value = _playerState.value.copy(
-                    isPlaying  = true,
-                    isLoading  = false,
-                    durationMs = duration
+                    isPlaying    = true,
+                    isLoading    = false,
+                    durationMs   = duration,
+                    errorMessage = null
                 )
             }
             setOnCompletionListener {
@@ -189,11 +241,44 @@ class AudioViewModel(app: Application) : AndroidViewModel(app) {
                 else _playerState.value = _playerState.value.copy(isPlaying = false)
             }
             setOnErrorListener { _, _, _ ->
-                _playerState.value = _playerState.value.copy(isLoading = false, isPlaying = false)
-                false
+                loadingTimeoutJob?.cancel()
+                _playerState.value = _playerState.value.copy(
+                    isLoading    = false,
+                    isPlaying    = false,
+                    errorMessage = "Problème de connexion. Vérifiez votre connexion internet et réessayez."
+                )
+                // true = "handled" — without this, MediaPlayer also fires onCompletion right
+                // after onError, which silently auto-advanced to the next surah on any network
+                // failure instead of surfacing the error.
+                true
             }
             prepareAsync()
         }
+
+        // Streaming (not a local/downloaded file) can hang indefinitely on a dead or very
+        // slow connection with neither onPrepared nor onError ever firing — bound it so the
+        // loading spinner doesn't spin forever with no feedback.
+        if (localFile == null) {
+            loadingTimeoutJob = viewModelScope.launch {
+                delay(PLAYBACK_LOADING_TIMEOUT_MS)
+                if (_activeSurahId.value == surah.id && _playerState.value.isLoading) {
+                    mediaPlayer?.release()
+                    mediaPlayer = null
+                    _playerState.value = _playerState.value.copy(
+                        isLoading    = false,
+                        isPlaying    = false,
+                        errorMessage = "Connexion trop lente ou indisponible. Réessayez."
+                    )
+                }
+            }
+        }
+    }
+
+    /** Re-attempts playback of whatever surah the floating player currently shows. */
+    fun retryPlayback() {
+        val reciter = _selectedReciter.value ?: return
+        val surah   = allSurahs.find { it.id == _playerState.value.surahId } ?: return
+        playSurah(reciter, surah)
     }
 
     fun togglePlayPause() {
@@ -215,7 +300,9 @@ class AudioViewModel(app: Application) : AndroidViewModel(app) {
     fun getCurrentPosition(): Int = mediaPlayer?.currentPosition ?: 0
 
     fun closePlayer() {
-        mediaPlayer?.pause()
+        loadingTimeoutJob?.cancel()
+        mediaPlayer?.release()
+        mediaPlayer = null
         _playerState.value = PlayerState()
         _activeSurahId.value = null
     }
@@ -226,6 +313,7 @@ class AudioViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     override fun onCleared() {
+        loadingTimeoutJob?.cancel()
         mediaPlayer?.release()
         mediaPlayer = null
         super.onCleared()

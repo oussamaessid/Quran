@@ -11,6 +11,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.DownloadDone
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -62,6 +64,8 @@ fun AudioScreen(
     val filteredRecs  by vm.filteredReciters.collectAsStateWithLifecycle()
     val searchQuery   by vm.searchQuery.collectAsStateWithLifecycle()
     val activeSurahId by vm.activeSurahId.collectAsStateWithLifecycle()
+    val downloadedIds by vm.downloadedSurahIds.collectAsStateWithLifecycle()
+    val downloadingIds by vm.downloadingSurahIds.collectAsStateWithLifecycle()
 
     var step              by remember { mutableStateOf(AudioStep.RECITERS) }
     var surahSearchQuery  by remember { mutableStateOf("") }
@@ -112,19 +116,24 @@ fun AudioScreen(
                 )
 
                 AudioStep.SURAHS -> SurahsScreen(
-                    reciter       = selectedRec,
-                    surahs        = filteredSurahs,
-                    totalCount    = allSurahs.size,
-                    searchQuery   = surahSearchQuery,
-                    onSearch      = { surahSearchQuery = it },
-                    activeSurahId = activeSurahId,
-                    playerState   = playerState,
-                    onPlay        = { surah -> selectedRec?.let { vm.playSurah(it, surah) } },
-                    onToggle      = vm::togglePlayPause,
-                    onSeek        = vm::seekTo,
-                    onClosePlayer = vm::closePlayer,
-                    getPosition   = vm::getCurrentPosition,
-                    onBack        = {
+                    reciter         = selectedRec,
+                    surahs          = filteredSurahs,
+                    totalCount      = allSurahs.size,
+                    searchQuery     = surahSearchQuery,
+                    onSearch        = { surahSearchQuery = it },
+                    activeSurahId   = activeSurahId,
+                    playerState     = playerState,
+                    downloadedIds   = downloadedIds,
+                    downloadingIds  = downloadingIds,
+                    onPlay          = { surah -> selectedRec?.let { vm.playSurah(it, surah) } },
+                    onDownload      = { surah -> selectedRec?.let { vm.downloadSurah(it, surah) } },
+                    onDeleteDownload = { surah -> selectedRec?.let { vm.deleteDownload(it, surah) } },
+                    onToggle        = vm::togglePlayPause,
+                    onSeek          = vm::seekTo,
+                    onClosePlayer   = vm::closePlayer,
+                    onRetry         = vm::retryPlayback,
+                    getPosition     = vm::getCurrentPosition,
+                    onBack          = {
                         surahSearchQuery = ""
                         step = AudioStep.RECITERS
                     }
@@ -369,19 +378,24 @@ fun ReciterCard(reciter: Reciter, onClick: () -> Unit) {
 
 @Composable
 fun SurahsScreen(
-    reciter       : Reciter?,
-    surahs        : List<SurahInfo>,
-    totalCount    : Int,
-    searchQuery   : String,
-    onSearch      : (String) -> Unit,
-    activeSurahId : Int?,
-    playerState   : PlayerState,
-    onPlay        : (SurahInfo) -> Unit,
-    onToggle      : () -> Unit,
-    onSeek        : (Int) -> Unit,
-    onClosePlayer : () -> Unit,
-    getPosition   : () -> Int,
-    onBack        : () -> Unit
+    reciter          : Reciter?,
+    surahs           : List<SurahInfo>,
+    totalCount       : Int,
+    searchQuery      : String,
+    onSearch         : (String) -> Unit,
+    activeSurahId    : Int?,
+    playerState      : PlayerState,
+    downloadedIds    : Set<Int>,
+    downloadingIds   : Set<Int>,
+    onPlay           : (SurahInfo) -> Unit,
+    onDownload       : (SurahInfo) -> Unit,
+    onDeleteDownload : (SurahInfo) -> Unit,
+    onToggle         : () -> Unit,
+    onSeek           : (Int) -> Unit,
+    onClosePlayer    : () -> Unit,
+    onRetry          : () -> Unit,
+    getPosition      : () -> Int,
+    onBack           : () -> Unit
 ) {
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
@@ -492,9 +506,14 @@ fun SurahsScreen(
                 ) {
                     items(surahs, key = { it.id }) { surah ->
                         SurahCard(
-                            surah    = surah,
-                            isActive = surah.id == activeSurahId,
-                            onClick  = { onPlay(surah) }
+                            surah         = surah,
+                            isActive      = surah.id == activeSurahId,
+                            isDownloaded  = surah.id in downloadedIds,
+                            isDownloading = surah.id in downloadingIds,
+                            onClick       = { onPlay(surah) },
+                            onDownloadClick = {
+                                if (surah.id in downloadedIds) onDeleteDownload(surah) else onDownload(surah)
+                            }
                         )
                     }
                 }
@@ -513,14 +532,22 @@ fun SurahsScreen(
                 getPosition = getPosition,
                 onSeek      = onSeek,
                 onToggle    = onToggle,
-                onClose     = onClosePlayer
+                onClose     = onClosePlayer,
+                onRetry     = onRetry
             )
         }
     }
 }
 
 @Composable
-fun SurahCard(surah: SurahInfo, isActive: Boolean, onClick: () -> Unit) {
+fun SurahCard(
+    surah           : SurahInfo,
+    isActive        : Boolean,
+    isDownloaded    : Boolean,
+    isDownloading   : Boolean,
+    onClick         : () -> Unit,
+    onDownloadClick : () -> Unit
+) {
     val inf = rememberInfiniteTransition(label = "sc_${surah.id}")
     val pulse by inf.animateFloat(0.3f, 1f,
         infiniteRepeatable(tween(700), RepeatMode.Reverse), label = "sc_pulse_${surah.id}")
@@ -634,6 +661,42 @@ fun SurahCard(surah: SurahInfo, isActive: Boolean, onClick: () -> Unit) {
                     Text("${surah.id}", fontSize = 13.sp, color = QuranColors.GoldDim, fontWeight = FontWeight.Bold)
                 }
             }
+
+            SurahDownloadButton(
+                isDownloaded  = isDownloaded,
+                isDownloading = isDownloading,
+                onClick       = onDownloadClick
+            )
+        }
+    }
+}
+
+// Lets the user pre-download a surah for a chosen reciter so it plays instantly and
+// offline afterwards — see AudioViewModel.downloadSurah / AudioCacheManager.
+@Composable
+private fun SurahDownloadButton(isDownloaded: Boolean, isDownloading: Boolean, onClick: () -> Unit) {
+    Box(
+        Modifier.size(32.dp).clip(CircleShape)
+            .background(
+                if (isDownloaded) QuranColors.GoldBlaze.copy(alpha = 0.18f)
+                else QuranColors.GoldDim.copy(alpha = 0.08f)
+            )
+            .border(0.5.dp, QuranColors.GoldDim.copy(alpha = 0.3f), CircleShape)
+            .clickable(enabled = !isDownloading) { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        when {
+            isDownloading -> CircularProgressIndicator(
+                color = QuranColors.Gold, strokeWidth = 1.5.dp, modifier = Modifier.size(14.dp)
+            )
+            isDownloaded -> Icon(
+                Icons.Default.DownloadDone, null,
+                tint = QuranColors.GoldBlaze, modifier = Modifier.size(15.dp)
+            )
+            else -> Icon(
+                Icons.Default.Download, null,
+                tint = QuranColors.GoldDim, modifier = Modifier.size(15.dp)
+            )
         }
     }
 }
@@ -648,7 +711,8 @@ fun AudioPlayer(
     getPosition: () -> Int,
     onSeek     : (Int) -> Unit,
     onToggle   : () -> Unit,
-    onClose    : () -> Unit
+    onClose    : () -> Unit,
+    onRetry    : () -> Unit
 ) {
     var currentMs by remember { mutableStateOf(0) }
 
@@ -734,7 +798,32 @@ fun AudioPlayer(
                 }
             }
 
-            if (state.durationMs > 0) {
+            if (state.errorMessage != null) {
+                Row(
+                    Modifier.fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0xFFB3261E).copy(alpha = 0.12f))
+                        .border(0.5.dp, Color(0xFFB3261E).copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text("⚠️", fontSize = 14.sp)
+                    Text(
+                        state.errorMessage,
+                        fontSize = 11.sp, color = QuranColors.TextSecondary,
+                        modifier = Modifier.weight(1f), lineHeight = 15.sp
+                    )
+                    Box(
+                        Modifier.clip(RoundedCornerShape(10.dp))
+                            .background(QuranColors.GoldBlaze.copy(alpha = 0.18f))
+                            .clickable { onRetry() }
+                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                    ) {
+                        Text("Réessayer", fontSize = 10.sp, color = QuranColors.GoldBlaze, fontWeight = FontWeight.Bold)
+                    }
+                }
+            } else if (state.durationMs > 0) {
                 val progress = (currentMs.toFloat() / state.durationMs).coerceIn(0f, 1f)
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Slider(
