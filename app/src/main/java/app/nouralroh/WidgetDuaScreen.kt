@@ -7,6 +7,7 @@ import android.os.PowerManager
 import android.provider.Settings
 import android.util.Log
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -30,6 +31,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import app.nouralroh.widget.openAutostartSettings
 
 private const val TAG = "WidgetDuaScreen"
 
@@ -135,7 +137,10 @@ fun WidgetDuaScreen(onBack: () -> Unit) {
                     Text(
                         "Certains téléphones bloquent les mises à jour en arrière-plan pour économiser " +
                             "la batterie. Autorisez l'application à s'exécuter en arrière-plan pour que le " +
-                            "widget affiche régulièrement un nouveau Duʿāʾ.",
+                            "widget affiche régulièrement un nouveau Duʿāʾ. Sur certaines marques " +
+                            "(Xiaomi, Samsung, Huawei, Oppo, Vivo...), il faut en plus autoriser le " +
+                            "« démarrage automatique » de l'application, sinon même l'autorisation " +
+                            "ci-dessus ne suffit pas.",
                         fontSize = 12.sp, color = QuranColors.TextSecondary, lineHeight = 17.sp
                     )
                     Button(
@@ -148,6 +153,21 @@ fun WidgetDuaScreen(onBack: () -> Unit) {
                         colors = ButtonDefaults.buttonColors(containerColor = QuranColors.GoldDim)
                     ) {
                         Text("Autoriser l'arrière-plan", fontWeight = FontWeight.Bold, color = Color(0xFF1A0F00))
+                    }
+                    OutlinedButton(
+                        onClick = {
+                            Log.d(TAG, "Autostart settings requested")
+                            openAutostartSettings(context)
+                        },
+                        modifier = Modifier.fillMaxWidth().height(44.dp),
+                        shape = RoundedCornerShape(14.dp),
+                        border = BorderStroke(1.dp, QuranColors.GoldDim)
+                    ) {
+                        Text(
+                            "Activer le démarrage automatique",
+                            fontWeight = FontWeight.Bold,
+                            color = QuranColors.GoldDim
+                        )
                     }
                 }
             }
