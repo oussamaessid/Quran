@@ -10,6 +10,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
+import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
 import androidx.glance.LocalSize
 import androidx.glance.action.clickable
@@ -22,6 +23,8 @@ import androidx.glance.background
 import androidx.glance.color.ColorProvider
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
+import androidx.glance.layout.Column
+import androidx.glance.layout.ContentScale
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.padding
 import androidx.glance.text.FontWeight
@@ -29,14 +32,16 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextAlign
 import androidx.glance.text.TextStyle
 import app.nouralroh.MainActivity
+import app.nouralroh.R
 
-// Mirrors QuranColors (Theme.kt): panel/panelBorder/arabicText/goldWarm/gold/goldDim,
-// hand-picked for the widget's light/dark surfaces since Glance can't read the app's
-// runtime CompositionLocal (RemoteViews render in a separate process).
+// The card background (drawable(-night)/dua_widget_card_bg.xml) deliberately swaps the
+// app's usual light/dark palette — light mode gets the dark surah-banner look, dark mode
+// gets a light ivory one — so the widget pops against the home screen instead of blending
+// into it. Text colors below are swapped to match: day = light text on that dark
+// background, night = dark text on that light background.
 private object DuaWidgetColors {
-    val background = ColorProvider(day = Color(0xFFFFFFFF), night = Color(0xFF2A1A04))
-    val arabic      = ColorProvider(day = Color(0xFF120C02), night = Color(0xFFF5EFE0))
-    val dim         = ColorProvider(day = Color(0xFF7A5520), night = Color(0xFF7A5520))
+    val arabic = ColorProvider(day = Color(0xFFF5EFE0), night = Color(0xFF120C02))
+    val dim    = ColorProvider(day = Color(0xFFD9BD84), night = Color(0xFF7A5520))
 }
 
 private val SmallSize  = DpSize(110.dp, 60.dp)
@@ -79,12 +84,16 @@ private fun DuaWidgetContentView(entry: DuaEntry?) {
     }
     val openAppAction = actionStartActivity(openIntent)
 
+    // dua_widget_card_bg is a vector frame (illuminated-manuscript leaf band + corner
+    // rosettes + inner double rule, see drawable(-night)/dua_widget_card_bg.xml) —
+    // FillBounds stretches it to exactly the widget's current bounds, whatever size that
+    // is, so the frame always matches the widget instead of being cropped or tiled.
     Box(
         modifier = GlanceModifier
             .fillMaxSize()
-            .background(DuaWidgetColors.background)
+            .background(ImageProvider(R.drawable.dua_widget_card_bg), contentScale = ContentScale.FillBounds)
             .cornerRadius(20.dp)
-            .padding(if (isSmall) 10.dp else 14.dp)
+            .padding(horizontal = if (isSmall) 10.dp else 16.dp, vertical = if (isSmall) 10.dp else if (isLarge) 22.dp else 16.dp)
             .clickable(openAppAction),
         contentAlignment = Alignment.Center
     ) {
@@ -92,11 +101,27 @@ private fun DuaWidgetContentView(entry: DuaEntry?) {
     }
 }
 
+// Glance's TextStyle has no textDirection param (unlike Compose's, used everywhere else in
+// the app for Arabic text), so the underlying RemoteViews TextView falls back to the widget's
+// ambient (locale-driven, e.g. French → LTR) paragraph direction instead of auto-detecting RTL.
+// Trailing neutral punctuation like "." then resolves to that LTR paragraph direction and
+// visually detaches to the wrong end of the line instead of following the last word. Wrapping
+// in an explicit RTL isolate forces the whole run — including trailing punctuation — to resolve
+// as RTL regardless of the surrounding paragraph direction.
+// Escaped (not literal) so the raw bidi control characters don't sit in the source file
+// itself — lint's BidiSpoofing check flags literal embedded RTL-isolate characters as a
+// potential "trojan source" risk, even when the intent (as here) is purely display-layer.
+private fun String.asRtlIsolate(): String = "\u2067$this\u2069"
+
 @Composable
 private fun DuaContent(entry: DuaEntry, isSmall: Boolean, isLarge: Boolean) {
-    Box(modifier = GlanceModifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    Column(
+        modifier = GlanceModifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         Text(
-            text = entry.arabic,
+            text = entry.arabic.asRtlIsolate(),
             style = TextStyle(
                 color = DuaWidgetColors.arabic,
                 fontSize = if (isSmall) 13.sp else if (isLarge) 17.sp else 15.sp,
