@@ -34,14 +34,14 @@ import androidx.glance.text.TextStyle
 import app.nouralroh.MainActivity
 import app.nouralroh.R
 
-// The card background (drawable(-night)/dua_widget_card_bg.xml) deliberately swaps the
-// app's usual light/dark palette — light mode gets the dark surah-banner look, dark mode
-// gets a light ivory one — so the widget pops against the home screen instead of blending
-// into it. Text colors below are swapped to match: day = light text on that dark
-// background, night = dark text on that light background.
+// Card background (drawable(-night)/dua_widget_card_bg.xml) follows the app's normal
+// light/dark palette and mirrors the app's own plain card style (see PageNavBar in
+// QuranScreen.kt: Panel fill + thin PanelBorder stroke) instead of a decorative frame.
+// Text colors below match: day = dark text on that light background, night = light text
+// on that dark background.
 private object DuaWidgetColors {
-    val arabic = ColorProvider(day = Color(0xFFF5EFE0), night = Color(0xFF120C02))
-    val dim    = ColorProvider(day = Color(0xFFD9BD84), night = Color(0xFF7A5520))
+    val arabic = ColorProvider(day = Color(0xFF120C02), night = Color(0xFFF5EFE0))
+    val dim    = ColorProvider(day = Color(0xFF7A5520), night = Color(0xFFD9BD84))
 }
 
 private val SmallSize  = DpSize(110.dp, 60.dp)
@@ -84,10 +84,11 @@ private fun DuaWidgetContentView(entry: DuaEntry?) {
     }
     val openAppAction = actionStartActivity(openIntent)
 
-    // dua_widget_card_bg is a vector frame (illuminated-manuscript leaf band + corner
-    // rosettes + inner double rule, see drawable(-night)/dua_widget_card_bg.xml) —
-    // FillBounds stretches it to exactly the widget's current bounds, whatever size that
-    // is, so the frame always matches the widget instead of being cropped or tiled.
+    // dua_widget_card_bg is a Panel-color card with a single gold border and the Quran
+    // illuminated-manuscript leaf-band + corner-sparkle decoration (see
+    // drawable(-night)/dua_widget_card_bg.xml) — FillBounds stretches it to exactly the
+    // widget's current bounds, whatever size that is, so the frame always matches the
+    // widget instead of being cropped or tiled.
     Box(
         modifier = GlanceModifier
             .fillMaxSize()
@@ -113,8 +114,40 @@ private fun DuaWidgetContentView(entry: DuaEntry?) {
 // potential "trojan source" risk, even when the intent (as here) is purely display-layer.
 private fun String.asRtlIsolate(): String = "\u2067$this\u2069"
 
+// RemoteViews TextView has no auto-shrink-to-fit, so a fixed font size either wastes space
+// on short duas or clips long ones. Stepping the size/line-count down by character count
+// keeps every dua fully visible instead of being cut off with an ellipsis.
+private fun fontSizeFor(length: Int, isSmall: Boolean, isLarge: Boolean) = when {
+    isSmall -> if (length > 70) 11.sp else 13.sp
+    isLarge -> when {
+        length > 380 -> 13.sp
+        length > 220 -> 15.sp
+        else -> 17.sp
+    }
+    else -> when {
+        length > 260 -> 11.sp
+        length > 150 -> 13.sp
+        else -> 15.sp
+    }
+}
+
+private fun maxLinesFor(length: Int, isSmall: Boolean, isLarge: Boolean) = when {
+    isSmall -> if (length > 70) 4 else 3
+    isLarge -> when {
+        length > 380 -> 12
+        length > 220 -> 10
+        else -> 8
+    }
+    else -> when {
+        length > 260 -> 7
+        length > 150 -> 6
+        else -> 5
+    }
+}
+
 @Composable
 private fun DuaContent(entry: DuaEntry, isSmall: Boolean, isLarge: Boolean) {
+    val length = entry.arabic.length
     Column(
         modifier = GlanceModifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -122,13 +155,14 @@ private fun DuaContent(entry: DuaEntry, isSmall: Boolean, isLarge: Boolean) {
     ) {
         Text(
             text = entry.arabic.asRtlIsolate(),
+            modifier = GlanceModifier.padding(horizontal = if (isSmall) 6.dp else 12.dp),
             style = TextStyle(
                 color = DuaWidgetColors.arabic,
-                fontSize = if (isSmall) 13.sp else if (isLarge) 17.sp else 15.sp,
+                fontSize = fontSizeFor(length, isSmall, isLarge),
                 fontWeight = FontWeight.Medium,
                 textAlign = TextAlign.Center
             ),
-            maxLines = if (isSmall) 3 else if (isLarge) 8 else 5
+            maxLines = maxLinesFor(length, isSmall, isLarge)
         )
     }
 }

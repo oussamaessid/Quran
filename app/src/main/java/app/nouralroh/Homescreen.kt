@@ -127,7 +127,6 @@ fun HomeScreen(
                     NavCardLandscape("📿","التسبيح","Tasbih","Compteur de dhikr", onOpenTasbih)
                     NavCardLandscape("🤲","الأذكار","Adhkar","Remembrances coraniques", onOpenAdhkar)
                     NavCardLandscape("🌙","ختم القرآن","Khatm","Suivi de lecture · 30 jours", onOpenKhatm)
-                    NavCardLandscape("🕌","الصلاة","Salat","Compteur rak'ahs · capteur lumière", onOpenSalat)
                     NavCardLandscape("🎧","الاستماع","Audio","Écoute · Récitants complets", onOpenAudio)
                     Text("بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ", fontSize = 12.sp,
                         color = QuranColors.GoldDim.copy(alpha = 0.5f),
@@ -210,13 +209,6 @@ fun HomeScreen(
                         accentColor = QuranColors.GoldBlaze, titleColor = QuranColors.GoldBlaze,
                         gradientStart = QuranColors.Panel, gradientEnd = QuranColors.AppBg,
                         onClick = onOpenKhatm
-                    )
-                    NavCardVertical(
-                        icon = "🕌", titleArabic = "الصلاة", titleLatin = "Salat",
-                        subtitle = "Compteur rak'ahs · capteur lumière", badge = "RAK'AHS",
-                        accentColor = QuranColors.GoldBlaze, titleColor = QuranColors.GoldBlaze,
-                        gradientStart = QuranColors.Panel, gradientEnd = QuranColors.AppBg,
-                        onClick = onOpenSalat
                     )
                 }
 

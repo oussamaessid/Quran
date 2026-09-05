@@ -18,7 +18,7 @@ object DuaWidgetPrefs {
     private const val KEY_LAST_SHOWN_AT   = "last_shown_at"
 
     val FREQUENCY_PRESETS_HOURS = listOf(1, 3, 6, 8, 12, 24)
-    const val DEFAULT_FREQUENCY_HOURS = 8
+    const val DEFAULT_FREQUENCY_HOURS = 4
 
     private fun prefs(context: Context) =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)

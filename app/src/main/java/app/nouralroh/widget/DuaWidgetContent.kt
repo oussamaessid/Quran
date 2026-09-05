@@ -14,12 +14,14 @@ data class DuaEntry(
 /** Fallback French label for a [DuaDatabaseEntry] category code when no better title exists. */
 private val CATEGORY_LABELS = mapOf(
     "QURANIC_DUAS" to "Duas coraniques",
-    "PRAYER" to "Prière",
     "GENERAL_DUAS" to "Duas générales",
     "MORNING" to "Matin",
     "EVENING" to "Soir",
     "PROTECTION" to "Protection",
 )
+
+// The "PRAYER" (Salat) category is excluded from the widget by design — it should not appear here.
+private val EXCLUDED_CATEGORIES = setOf("PRAYER")
 
 @Volatile
 private var widgetItemsCache: List<DuaEntry>? = null
@@ -32,6 +34,7 @@ fun duaWidgetItems(context: Context): List<DuaEntry> {
     widgetItemsCache?.let { return it }
     val items = DuaDatabase.load(context)
         .filter { it.isSuitableForWidget && it.status == "VERIFIED" }
+        .filterNot { entry -> entry.categories.any { it in EXCLUDED_CATEGORIES } }
         .map { entry ->
             val category = entry.categories.firstOrNull()
             DuaEntry(

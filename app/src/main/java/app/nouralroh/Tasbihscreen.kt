@@ -292,12 +292,8 @@ fun TasbihBeads(
                     .fillMaxSize()
                     .clip(CircleShape)
                     .background(Brush.radialGradient(listOf(
-                        glowColor.copy(alpha = 0.28f), Color(0xFF060300)
-                    )))
-                    .border(2.dp, Brush.verticalGradient(listOf(
-                        glowColor.copy(alpha = pulse * 0.95f),
-                        glowColor.copy(alpha = 0.08f)
-                    )), CircleShape),
+                        glowColor.copy(alpha = 0.22f), QuranColors.Panel
+                    ))),
                 contentAlignment = Alignment.Center
             ) {
                 Column(
@@ -308,16 +304,16 @@ fun TasbihBeads(
                         (slideInVertically { -it } + fadeIn()) togetherWith
                                 (slideOutVertically { it } + fadeOut())
                     }, label = "orbN") { c ->
-                        Text("$c", color = glowColor, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
+                        Text("$c", color = QuranColors.ArabicText, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
                     }
                     Box(Modifier.width(24.dp).height(0.5.dp).background(
                         Brush.horizontalGradient(listOf(
                             Color.Transparent, glowColor.copy(alpha = 0.5f), Color.Transparent
                         ))
                     ))
-                    Text("/$target", color = QuranColors.GoldDim, fontSize = 7.sp)
+                    Text("/$target", color = QuranColors.ArabicText.copy(alpha = 0.6f), fontSize = 7.sp)
                     if (completedCycles > 0)
-                        Text("×$completedCycles", color = glowColor, fontSize = 6.sp, fontWeight = FontWeight.Bold)
+                        Text("×$completedCycles", color = QuranColors.ArabicText, fontSize = 6.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
