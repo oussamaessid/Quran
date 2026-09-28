@@ -3,6 +3,8 @@ package app.nouralroh
 import android.app.Activity
 import android.content.Context
 import android.util.Log
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
 import com.google.android.gms.ads.AdError
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.FullScreenContentCallback
@@ -23,9 +25,9 @@ class AdManager(private val context: Context) {
     companion object {
         private const val TAG = "AdManager"
 
-        // IMPORTANT : mettre TEST = true sur votre propre appareil pendant les tests
-        // pour éviter tout clic accidentel sur de vraies annonces (trafic invalide).
-        private const val TEST = false
+        // Les builds debug utilisent TOUJOURS les annonces de test Google : un clic sur
+        // une vraie annonce depuis votre propre appareil = trafic invalide (risque AdMob).
+        private val TEST = BuildConfig.DEBUG
 
         // Délai minimum entre deux interstitiels : 60 secondes
         private const val MIN_INTER_INTERVAL_MS = 60_000L
@@ -33,6 +35,10 @@ class AdManager(private val context: Context) {
         // Délai minimum entre deux App Open Ads : 4 heures
         private const val MIN_APP_OPEN_INTERVAL_MS = 4 * 60 * 60 * 1_000L
         private const val PREF_LAST_APP_OPEN_MS = "last_app_open_ms"
+
+        // Si l'App Open arrive plus tard que ça après le lancement, on ne l'affiche pas :
+        // l'utilisateur est déjà en train de toucher l'écran → clic accidentel garanti.
+        private const val APP_OPEN_MAX_WAIT_MS = 4_000L
 
         val APP_OPEN_ID: String
             get() = if (TEST) "ca-app-pub-3940256099942544/9257395921"
@@ -50,8 +56,12 @@ class AdManager(private val context: Context) {
         )
     }
 
-    fun initAndShowAppOpen(activity: Activity) {
+    private var launchMs = 0L
+
+    /** [allowAppOpen] = false au premier lancement (écran d'installation) : pas d'App Open. */
+    fun initAndShowAppOpen(activity: Activity, allowAppOpen: Boolean) {
         Log.d(TAG, "1️⃣ init AdMob…")
+        launchMs = System.currentTimeMillis()
 
         val config = RequestConfiguration.Builder()
             .setTestDeviceIds(TEST_DEVICE_IDS)
@@ -60,7 +70,7 @@ class AdManager(private val context: Context) {
 
         MobileAds.initialize(context) {
             Log.d(TAG, "2️⃣ AdMob prêt → vérification cooldown App Open")
-            if (canShowAppOpen()) {
+            if (allowAppOpen && canShowAppOpen()) {
                 loadAppOpen(activity)
             } else {
                 Log.d(TAG, "⏱️ Cooldown App Open actif → loadInter")
@@ -88,6 +98,11 @@ class AdManager(private val context: Context) {
             AppOpenAd.APP_OPEN_AD_ORIENTATION_PORTRAIT,
             object : AppOpenAd.AppOpenAdLoadCallback() {
                 override fun onAdLoaded(ad: AppOpenAd) {
+                    if (System.currentTimeMillis() - launchMs > APP_OPEN_MAX_WAIT_MS) {
+                        Log.d(TAG, "⏱️ App Open chargée trop tard → ignorée")
+                        loadInter()
+                        return
+                    }
                     Log.d(TAG, "3️⃣ App Open chargée → show")
                     appOpenAd = ad
                     showAppOpen(activity)
@@ -102,6 +117,14 @@ class AdManager(private val context: Context) {
 
     private fun showAppOpen(activity: Activity) {
         val ad = appOpenAd ?: run { loadInter(); return }
+        // Jamais par-dessus une activité fermée ou en arrière-plan.
+        val resumed = (activity as? LifecycleOwner)?.lifecycle?.currentState
+            ?.isAtLeast(Lifecycle.State.RESUMED) ?: true
+        if (activity.isFinishing || activity.isDestroyed || !resumed) {
+            appOpenAd = null
+            loadInter()
+            return
+        }
         ad.fullScreenContentCallback = object : FullScreenContentCallback() {
             override fun onAdShowedFullScreenContent() {
                 Log.d(TAG, "✅ App Open affichée")

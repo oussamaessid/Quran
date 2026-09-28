@@ -13,8 +13,8 @@ android {
         applicationId = "app.quran"
         minSdk = 24
         targetSdk = 36
-        versionCode = 13
-        versionName = "1.2"
+        versionCode = 14
+        versionName = "1.2.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -37,6 +37,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -70,6 +71,7 @@ dependencies {
 
     implementation("androidx.media3:media3-exoplayer:1.3.1")
     implementation("com.google.android.gms:play-services-ads:23.6.0")
+    implementation("com.google.android.play:app-update-ktx:2.1.0")
     implementation("androidx.work:work-runtime-ktx:2.9.0")
     implementation(libs.androidx.glance.appwidget)
 

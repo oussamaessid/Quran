@@ -47,6 +47,7 @@ enum class AppScreen {
 class MainActivity : ComponentActivity() {
 
     private lateinit var adManager: AdManager
+    private val forceUpdate = ForceUpdateManager(this)
 
     // Set from onNewIntent() when the widget is tapped while the app is already running.
     private var pendingOpenScreen by mutableStateOf<AppScreen?>(null)
@@ -63,15 +64,24 @@ class MainActivity : ComponentActivity() {
         pendingOpenScreen = screenFromIntent(intent)
     }
 
+    override fun onResume() {
+        super.onResume()
+        forceUpdate.resumeIfInProgress()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         KhatmNotificationHelper.createChannel(this)
 
-        // ── Pub : init + App Open AVANT setContent ────────────────
+        // ── Mise à jour obligatoire, puis pub ─────────────────────
+        // Les pubs ne démarrent que si l'app est à jour : jamais d'App Open
+        // par-dessus l'écran de mise à jour. Pas d'App Open au premier lancement.
         adManager = AdManager(this)
-        adManager.initAndShowAppOpen(this)
-        // ↑ Chaîne : init → load → show → loadInter (tout automatique)
+        forceUpdate.check {
+            adManager.initAndShowAppOpen(this, allowAppOpen = DataInstallManager.isInstalled(this))
+        }
+        // ↑ Chaîne : update check → init → load → show → loadInter (tout automatique)
 
         setContent {
             val darkTheme = isSystemInDarkTheme()
