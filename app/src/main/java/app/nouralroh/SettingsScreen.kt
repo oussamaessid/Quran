@@ -1,5 +1,19 @@
 package app.nouralroh
 
+import android.app.AlarmManager
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import app.nouralroh.adhan.AdhanPreferences
+import app.nouralroh.adhan.AdhanScheduler
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -31,6 +45,8 @@ import androidx.compose.foundation.layout.statusBars
 
 @Composable
 fun SettingsScreen(onBack: () -> Unit, onOpenWidgetDua: () -> Unit) {
+    val context = LocalContext.current
+    var adhanEnabled by remember { mutableStateOf(AdhanPreferences.isEnabled(context)) }
 
     BackHandler { onBack() }
 
@@ -73,6 +89,26 @@ fun SettingsScreen(onBack: () -> Unit, onOpenWidgetDua: () -> Unit) {
         }
 
         Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            AdhanSettingRow(
+                enabled = adhanEnabled,
+                onEnabledChange = { enabled ->
+                    adhanEnabled = enabled
+                    AdhanScheduler.setEnabled(context, enabled)
+                    if (enabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        val alarmManager = context.getSystemService(AlarmManager::class.java)
+                        if (!alarmManager.canScheduleExactAlarms()) {
+                            runCatching {
+                                context.startActivity(
+                                    Intent(
+                                        Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,
+                                        Uri.parse("package:${context.packageName}"),
+                                    ),
+                                )
+                            }
+                        }
+                    }
+                },
+            )
             SettingsCategoryRow(
                 icon = "🧩",
                 titleArabic = "الودجت",
@@ -81,6 +117,41 @@ fun SettingsScreen(onBack: () -> Unit, onOpenWidgetDua: () -> Unit) {
                 onClick = onOpenWidgetDua
             )
         }
+    }
+}
+
+@Composable
+private fun AdhanSettingRow(enabled: Boolean, onEnabledChange: (Boolean) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
+            .background(Brush.horizontalGradient(listOf(QuranColors.Panel, QuranColors.AppBg)))
+            .border(1.dp, QuranColors.PanelBorder, RoundedCornerShape(16.dp))
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        Box(
+            Modifier.size(44.dp).clip(CircleShape)
+                .background(QuranColors.GoldWarm.copy(alpha = 0.15f))
+                .border(1.dp, QuranColors.GoldDim, CircleShape),
+            contentAlignment = Alignment.Center,
+        ) { Text("🔊", fontSize = 18.sp) }
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text("أذان الصلاة", fontSize = 15.sp, color = QuranColors.GoldBlaze,
+                fontWeight = FontWeight.Bold, style = TextStyle(textDirection = TextDirection.Rtl))
+            Text("Adhan automatique", fontSize = 11.sp, color = QuranColors.GoldBright,
+                fontWeight = FontWeight.Medium)
+            Text(if (enabled) "Actif aux heures de prière" else "Désactivé",
+                fontSize = 10.sp, color = QuranColors.TextMuted)
+        }
+        Switch(
+            checked = enabled,
+            onCheckedChange = onEnabledChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = QuranColors.GoldBlaze,
+                checkedTrackColor = QuranColors.Gold.copy(alpha = 0.45f),
+            ),
+        )
     }
 }
 

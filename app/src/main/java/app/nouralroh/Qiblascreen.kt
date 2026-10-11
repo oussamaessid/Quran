@@ -580,6 +580,20 @@ private fun QiblaReadyContent(
                             tailY += dash
                         }
 
+                    }
+
+                    // Badge Kaaba fixe en haut du cercle : seule la flèche tourne.
+                    // Quand la flèche pointe vers ce badge, le téléphone est orienté vers la Qibla.
+                    Canvas(Modifier.size(compassSize)) {
+                        val centerX = size.width / 2f
+                        val centerY = size.height / 2f
+                        val radius = size.width / 2f
+                        val badgeSize = with(density) { 36.dp.toPx() }
+                        val badgeCenter = Offset(
+                            x = centerX,
+                            y = centerY - radius + badgeSize / 2f + 2.dp.toPx(),
+                        )
+
                         if (state.isAligned) {
                             drawCircle(
                                 color = goldColor.copy(alpha = badgeGlow * 0.55f),

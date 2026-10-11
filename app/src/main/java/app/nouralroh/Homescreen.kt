@@ -43,6 +43,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import app.nouralroh.data.UiState
 import app.nouralroh.viewmodel.PrayerTimesViewModel
 import java.util.Calendar
+import kotlinx.coroutines.delay
 
 // ─── HomeScreen — SANS aucun overlay pub Compose ──────────────────────────────
 // La publicité App Open Ad est gérée nativement par AdMob (Activity-level)
@@ -70,7 +71,12 @@ fun HomeScreen(
     val isLandscape   = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
     val locationReady = permissionGranted && gpsEnabled
 
-    LaunchedEffect(Unit)              { prayerVm.refreshNextPrayer() }
+    LaunchedEffect(Unit) {
+        while (true) {
+            prayerVm.refreshNextPrayer()
+            delay(30_000)
+        }
+    }
     LaunchedEffect(locationReady)     { if (locationReady)      prayerVm.loadPrayerTimes() }
     LaunchedEffect(permissionGranted) { if (!permissionGranted) onRequestPermission() }
 
@@ -239,6 +245,19 @@ private val prayerIcons = mapOf(
 
 @Composable
 fun PrayerTimesCard(pt: app.nouralroh.viewmodel.PrayerTimes) {
+    var currentTimeMillis by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(pt.nextPrayerAtMillis) {
+        while (true) {
+            currentTimeMillis = System.currentTimeMillis()
+            delay(1_000)
+        }
+    }
+    val remainingSeconds = ((pt.nextPrayerAtMillis - currentTimeMillis) / 1_000).coerceAtLeast(0)
+    val countdown = "%02d:%02d:%02d".format(
+        remainingSeconds / 3_600,
+        (remainingSeconds % 3_600) / 60,
+        remainingSeconds % 60,
+    )
     val inf = rememberInfiniteTransition(label = "ptcard")
     val shimX by inf.animateFloat(-1f, 2f,
         infiniteRepeatable(tween(3200, easing = LinearEasing), RepeatMode.Restart), "shimX")
@@ -315,6 +334,8 @@ fun PrayerTimesCard(pt: app.nouralroh.viewmodel.PrayerTimes) {
                             }
                             Text(pt.nextTime, fontSize = 22.sp, color = QuranColors.GoldAccent,
                                 fontWeight = FontWeight.ExtraBold, letterSpacing = 1.sp)
+                            Text("dans $countdown", fontSize = 8.sp, color = QuranColors.GoldDim,
+                                letterSpacing = 0.5.sp)
                         }
                     }
                 }

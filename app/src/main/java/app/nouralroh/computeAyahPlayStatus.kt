@@ -112,7 +112,10 @@ fun FlowingMushafText(
     wordPositionMap     : Map<Int, Int>,
     fontSize        : TextUnit,
     onAyahSelected  : (String?) -> Unit,
-    modifier        : Modifier = Modifier
+    modifier        : Modifier = Modifier,
+    // true en paysage : hauteur de ligne naturelle + contenu scrollable
+    // (au lieu de tout compresser dans la hauteur de l'écran)
+    scrollable      : Boolean  = false
 ) {
     val flowElems: List<FlowElem> = remember(quranPage, chapters, showTranslation) {
         val elems      = mutableListOf<FlowElem>()
@@ -153,8 +156,10 @@ fun FlowingMushafText(
     SubcomposeLayout(modifier = modifier) { constraints ->
 
         val availW   = constraints.maxWidth
-        val fullH    = constraints.maxHeight.takeIf { it > 0 } ?: 1000
-        val vPadPx   = (fullH * 0.018f).toInt().coerceAtLeast(4)
+        val fullH    = if (scrollable || !constraints.hasBoundedHeight) 0
+                       else constraints.maxHeight.takeIf { it > 0 } ?: 1000
+        val vPadPx   = if (scrollable) 8.dp.roundToPx()
+                       else (fullH * 0.018f).toInt().coerceAtLeast(4)
         val availH   = (fullH - vPadPx * 2).coerceAtLeast(1)
         val yStart   = vPadPx
         val minGapPx = 4
@@ -198,7 +203,7 @@ fun FlowingMushafText(
         val effectiveFontSize: TextUnit
         val adjustedNaturalW : IntArray
 
-        if (unitHAtBase >= 1f) {
+        if (scrollable || unitHAtBase >= 1f) {
             effectiveFontSize = fontSize
             adjustedNaturalW  = naturalW
         } else {
@@ -309,7 +314,8 @@ fun FlowingMushafText(
                 nTransls   * 0.45f +
                 nGaps      * 0.28f
 
-        val unitH   = (availH / totalUnits.coerceAtLeast(1f)).toInt().coerceAtLeast(4)
+        val unitH   = if (scrollable) (effectiveFontSize.toPx() * 2.1f).toInt()
+                      else (availH / totalUnits.coerceAtLeast(1f)).toInt().coerceAtLeast(4)
         val lineHpx = unitH
         val hdrHpx  = (unitH * 1.50f).toInt()
         val bsmHpx  = (unitH * 0.90f).toInt()
@@ -471,7 +477,8 @@ fun FlowingMushafText(
             }
         }
 
-        layout(availW, fullH) {
+        val layoutH = if (scrollable) yOff + vPadPx * 2 else fullH
+        layout(availW, layoutH) {
             placed.forEach { (p, x, y) -> p.place(x, y + yStart) }
         }
     }

@@ -36,6 +36,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
@@ -903,24 +905,29 @@ fun MushafPageContent(
             .fillMaxSize()
             .noRippleClickable { onAyahSelected(null) }) {
 
+        // En paysage la hauteur est trop petite pour contenir toute la page :
+        // on garde une hauteur de ligne naturelle et la page devient scrollable.
+        val isLandscape = maxWidth > maxHeight
+        val scrollState = rememberScrollState()
+
         val padH = maxWidth * 0.022f
-        val padV = maxHeight * 0.008f
-        val topStripH = maxHeight * 0.024f
-        val bottomStripH = maxHeight * 0.016f
+        val padV = if (isLandscape) 6.dp else maxHeight * 0.008f
+        val topStripH = if (isLandscape) 22.dp else maxHeight * 0.024f
+        val bottomStripH = if (isLandscape) 18.dp else maxHeight * 0.016f
 
         if (!isCenteredPage) {
             val extraPadH = maxWidth * 0.016f
-            val flowFontSp = (maxWidth.value * 0.05f * fontSizeMultiplier).sp
+            val flowFontSp = (maxWidth.value * (if (isLandscape) 0.038f else 0.05f) * fontSizeMultiplier).sp
 
             Column(
                 Modifier
                     .fillMaxSize()
+                    .then(if (isLandscape) Modifier.verticalScroll(scrollState) else Modifier)
                     .padding(horizontal = padH, vertical = padV)
             ) {
                 PageTopStrip(quranPage, topStripH)
                 Box(
-                    Modifier
-                        .weight(1f)
+                    (if (isLandscape) Modifier else Modifier.weight(1f))
                         .fillMaxWidth()
                         .padding(horizontal = extraPadH)
                 ) {
@@ -936,7 +943,8 @@ fun MushafPageContent(
                         wordPositionMap = wordPositionMap,
                         fontSize = flowFontSp,
                         onAyahSelected = onAyahSelected,
-                        modifier = Modifier.fillMaxSize()
+                        modifier = if (isLandscape) Modifier.fillMaxWidth() else Modifier.fillMaxSize(),
+                        scrollable = isLandscape
                     )
                 }
                 PageBottomStrip(quranPage, bottomStripH)
@@ -967,7 +975,7 @@ fun MushafPageContent(
 
         val maxWidthDp = maxWidth
         val maxWidthValue = maxWidth.value
-        val fontSize = (maxWidthValue * 0.052f * fontSizeMultiplier).sp
+        val fontSize = (maxWidthValue * (if (isLandscape) 0.038f else 0.052f) * fontSizeMultiplier).sp
         val numLines = lineMap.size.coerceAtLeast(1)
         val nHeaders = surahStartAtLine.size
         val nBismillah = surahStartAtLine.values.count { it.bismillahPre && it.id != 9 && it.id != 1 }
@@ -977,7 +985,9 @@ fun MushafPageContent(
 
         val contentH = maxHeight - padV * 2 - topStripH - bottomStripH
 
-        val unitH = if (isShortPage) {
+        val unitH = if (isLandscape) {
+            with(density) { fontSize.toDp() } * 2.1f
+        } else if (isShortPage) {
             contentH * 0.068f
         } else {
             val totalUnits =
@@ -993,6 +1003,7 @@ fun MushafPageContent(
         Column(
             Modifier
                 .fillMaxSize()
+                .then(if (isLandscape) Modifier.verticalScroll(scrollState) else Modifier)
                 .padding(horizontal = padH, vertical = padV)
         ) {
             PageTopStrip(quranPage, topStripH)
@@ -1078,14 +1089,15 @@ fun MushafPageContent(
                 }
             }
 
-            Spacer(Modifier.weight(1f))
+            if (isLandscape) Spacer(Modifier.height(padV)) else Spacer(Modifier.weight(1f))
             PageBottomStrip(quranPage, bottomStripH)
         }
 
         if (showAudioSheet && !audioChoiceMade && selectedAyahKey != null) {
             val barH = maxHeight * 0.170f
             val gap = maxHeight * 0.007f
-            val topY = ((selectedLineYDp
+            val scrollDp = with(density) { scrollState.value.toDp() }
+            val topY = ((selectedLineYDp?.minus(scrollDp)
                 ?: (maxHeight * 0.35f)) - barH - gap).coerceAtLeast(padV + topStripH + 4.dp)
 
             Box(

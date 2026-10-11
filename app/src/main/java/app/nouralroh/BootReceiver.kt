@@ -6,6 +6,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import app.nouralroh.data.KhatmRepository
+import app.nouralroh.adhan.AdhanScheduler
 import app.nouralroh.widget.DuaGlanceWidgetReceiver
 import app.nouralroh.widget.DuaWidgetPrefs
 import app.nouralroh.widget.DuaWidgetScheduler
@@ -20,6 +21,8 @@ class BootReceiver : BroadcastReceiver() {
             val minute = plan.reminderMinute ?: 0
             if (hour != null) KhatmScheduler.schedule(context, hour, minute)
         }
+
+        AdhanScheduler.scheduleAll(context)
 
         // WorkManager re-persists periodic work across reboot on its own, but this is a
         // cheap, defensive belt-and-suspenders re-arm in case that job was ever cleared by

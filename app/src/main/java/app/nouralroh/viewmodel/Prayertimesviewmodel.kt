@@ -7,6 +7,7 @@ import android.location.Geocoder
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import app.nouralroh.data.UiState
+import app.nouralroh.adhan.AdhanScheduler
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
@@ -23,6 +24,8 @@ import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.Locale
+import java.time.LocalDate
+import java.time.ZoneId
 
 private const val DEFAULT_LAT  = 36.8065   // Tunis (1ère ouverture)
 private const val DEFAULT_LON  = 10.1815
@@ -33,7 +36,7 @@ private const val DEFAULT_CITY = "تونس"
 //   methodSettings=18,null,18  → Fajr 18°, Isha 18° (officiel Tunisie)
 //   school=0   → Maliki/Shafi pour Asr (ombre × 1)
 private const val ALADHAN_URL_TEMPLATE =
-    "https://api.aladhan.com/v1/timings?latitude=%s&longitude=%s" +
+    "https://api.aladhan.com/v1/timings/%s?latitude=%s&longitude=%s" +
     "&method=99&methodSettings=18,null,18&school=0"
 
 data class PrayerTimes(
@@ -45,8 +48,10 @@ data class PrayerTimes(
     val isha      : String,
     val nextPrayer: String,
     val nextTime  : String,
+    val nextPrayerAtMillis: Long,
     val cityName  : String,
     val hijriDate : String,
+    val timezone  : String,
     val latitude  : Double = DEFAULT_LAT,
     val longitude : Double = DEFAULT_LON
 )
@@ -83,6 +88,7 @@ class PrayerTimesViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private var locationCallback: LocationCallback? = null
+    private var fetchedOn = LocalDate.MIN
 
     init {
         viewModelScope.launch { fetchTimings(savedLatitude, savedLongitude) }
@@ -90,12 +96,21 @@ class PrayerTimesViewModel(app: Application) : AndroidViewModel(app) {
 
     fun refreshNextPrayer() {
         val current = (_state.value as? UiState.Success)?.data ?: return
-        val (next, nextT) = computeNext(listOf(
+        val currentZone = runCatching { ZoneId.of(current.timezone) }.getOrDefault(ZoneId.systemDefault())
+        if (fetchedOn != LocalDate.now(currentZone)) {
+            viewModelScope.launch { fetchTimings(current.latitude, current.longitude) }
+            return
+        }
+        val next = computeNext(listOf(
             "Fajr" to current.fajr, "Dhuhr" to current.dhuhr, "Asr" to current.asr,
             "Maghrib" to current.maghrib, "Isha" to current.isha
-        ))
-        if (next != current.nextPrayer || nextT != current.nextTime) {
-            _state.value = UiState.Success(current.copy(nextPrayer = next, nextTime = nextT))
+        ), currentZone)
+        if (next.name != current.nextPrayer || next.epochMillis != current.nextPrayerAtMillis) {
+            _state.value = UiState.Success(current.copy(
+                nextPrayer = next.name,
+                nextTime = next.time,
+                nextPrayerAtMillis = next.epochMillis,
+            ))
         }
     }
 
@@ -162,7 +177,18 @@ class PrayerTimesViewModel(app: Application) : AndroidViewModel(app) {
     private suspend fun fetchTimings(lat: Double, lon: Double) {
         try {
             val pt = withContext(Dispatchers.IO) { callAladhan(lat, lon) }
+            fetchedOn = LocalDate.now(
+                runCatching { ZoneId.of(pt.timezone) }.getOrDefault(ZoneId.systemDefault()),
+            )
             _state.value = UiState.Success(pt)
+            AdhanScheduler.updateTimings(
+                getApplication(),
+                mapOf(
+                    "Fajr" to pt.fajr, "Dhuhr" to pt.dhuhr, "Asr" to pt.asr,
+                    "Maghrib" to pt.maghrib, "Isha" to pt.isha,
+                ),
+                pt.timezone,
+            )
         } catch (_: Exception) {
             if (_state.value !is UiState.Success)
                 _state.value = UiState.Error("Pas de connexion réseau")
@@ -170,7 +196,10 @@ class PrayerTimesViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun callAladhan(lat: Double, lon: Double): PrayerTimes {
-        val url  = URL(ALADHAN_URL_TEMPLATE.format(lat, lon))
+        // A Unix timestamp lets AlAdhan resolve the calendar date in the coordinates' own
+        // timezone, avoiding an off-by-one-day result while the user is travelling.
+        val timestamp = System.currentTimeMillis() / 1_000L
+        val url  = URL(ALADHAN_URL_TEMPLATE.format(timestamp, lat, lon))
         val conn = (url.openConnection() as HttpURLConnection).apply {
             connectTimeout = 12_000
             readTimeout    = 12_000
@@ -188,6 +217,10 @@ class PrayerTimesViewModel(app: Application) : AndroidViewModel(app) {
         val data    = root.getJSONObject("data")
         val timings = data.getJSONObject("timings")
         val hijri   = data.getJSONObject("date").getJSONObject("hijri")
+        val timezone = data.optJSONObject("meta")?.optString("timezone")
+            ?.takeIf { it.isNotBlank() }
+            ?: ZoneId.systemDefault().id
+        val zoneId = runCatching { ZoneId.of(timezone) }.getOrDefault(ZoneId.systemDefault())
 
         fun t(key: String) = timings.getString(key).trim()
             .substringBefore(" (").substringBefore(" ").take(5)
@@ -220,27 +253,18 @@ class PrayerTimesViewModel(app: Application) : AndroidViewModel(app) {
                          "${HIJRI_MONTHS_AR[monthNum - 1]} " +
                          "${hijri.getString("year")} هـ"
 
-        val (next, nextT) = computeNext(listOf(
+        val next = computeNext(listOf(
             "Fajr" to fajr, "Dhuhr" to dhuhr, "Asr" to asr,
             "Maghrib" to maghrib, "Isha" to isha
-        ))
+        ), zoneId)
 
         return PrayerTimes(fajr, sunrise, dhuhr, asr, maghrib, isha,
-                           next, nextT, city, hijriStr, lat, lon)
+                           next.name, next.time, next.epochMillis, city, hijriStr,
+                           timezone, lat, lon)
     }
 
-    private fun computeNext(prayers: List<Pair<String, String>>): Pair<String, String> {
-        val cal    = java.util.Calendar.getInstance()
-        val nowMin = cal.get(java.util.Calendar.HOUR_OF_DAY) * 60 +
-                     cal.get(java.util.Calendar.MINUTE)
-        for ((name, time) in prayers) {
-            val parts = time.split(":")
-            val min   = (parts.getOrNull(0)?.toIntOrNull() ?: 0) * 60 +
-                        (parts.getOrNull(1)?.toIntOrNull() ?: 0)
-            if (min > nowMin) return name to time
-        }
-        return prayers.first()
-    }
+    private fun computeNext(prayers: List<Pair<String, String>>, zoneId: ZoneId): NextPrayer =
+        PrayerTimeCalculator.nextPrayer(prayers, zoneId)
 
     override fun onCleared() {
         super.onCleared()
