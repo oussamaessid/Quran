@@ -14,13 +14,15 @@ object AdhanScheduler {
     private const val PREFS = "adhan_schedule"
     private const val KEY_TIMES = "prayer_times"
     private const val KEY_ZONE = "timezone"
+    private const val KEY_DATE = "date"
     private val prayerNames = listOf("Fajr", "Dhuhr", "Asr", "Maghrib", "Isha")
 
-    fun updateTimings(context: Context, times: Map<String, String>, timezone: String) {
+    fun updateTimings(context: Context, times: Map<String, String>, timezone: String, date: LocalDate = LocalDate.now()) {
         val encoded = prayerNames.joinToString(";") { "$it=${times[it].orEmpty()}" }
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
             .putString(KEY_TIMES, encoded)
             .putString(KEY_ZONE, timezone)
+            .putString(KEY_DATE, date.toString())
             .apply()
         if (AdhanPreferences.isEnabled(context)) scheduleAll(context)
     }
@@ -50,6 +52,10 @@ object AdhanScheduler {
     }
 
     private fun schedule(context: Context, name: String, value: String, zone: ZoneId) {
+        if (!AdhanPreferences.isPrayerEnabled(context, name)) {
+            context.getSystemService(AlarmManager::class.java).cancel(pendingIntent(context, name))
+            return
+        }
         val time = runCatching { LocalTime.parse(value) }.getOrNull() ?: return
         val now = ZonedDateTime.now(zone)
         var occurrence = LocalDate.now(zone).atTime(time).atZone(zone)
@@ -68,6 +74,20 @@ object AdhanScheduler {
     fun cancelAll(context: Context) {
         val alarmManager = context.getSystemService(AlarmManager::class.java)
         prayerNames.forEach { alarmManager.cancel(pendingIntent(context, it)) }
+    }
+
+    fun scheduleTest(context: Context, delayMillis: Long = 60_000L) {
+        if (!AdhanPreferences.isEnabled(context)) return
+        val manager = context.getSystemService(AlarmManager::class.java)
+        val intent = PendingIntent.getBroadcast(
+            context, 3199,
+            Intent(context, AdhanReceiver::class.java).putExtra(AdhanReceiver.EXTRA_PRAYER, "Test"),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        val trigger = System.currentTimeMillis() + delayMillis
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || manager.canScheduleExactAlarms())
+            manager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, trigger, intent)
+        else manager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, trigger, intent)
     }
 
     private fun pendingIntent(context: Context, name: String): PendingIntent =

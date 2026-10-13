@@ -8,7 +8,7 @@ import androidx.core.content.ContextCompat
 class AdhanReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val prayer = intent.getStringExtra(EXTRA_PRAYER) ?: return
-        if (!AdhanPreferences.isEnabled(context)) return
+        if (!AdhanPreferences.isEnabled(context) || !AdhanPreferences.isPrayerEnabled(context, prayer)) return
         ContextCompat.startForegroundService(
             context,
             Intent(context, AdhanPlaybackService::class.java)

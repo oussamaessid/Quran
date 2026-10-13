@@ -42,6 +42,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.nouralroh.data.UiState
 import app.nouralroh.viewmodel.PrayerTimesViewModel
+import app.nouralroh.prayer.TUNISIA_CITIES
+import java.time.ZoneId
+import java.time.ZonedDateTime
 import java.util.Calendar
 import kotlinx.coroutines.delay
 
@@ -74,7 +77,7 @@ fun HomeScreen(
     LaunchedEffect(Unit) {
         while (true) {
             prayerVm.refreshNextPrayer()
-            delay(30_000)
+            delay(1_000)
         }
     }
     LaunchedEffect(locationReady)     { if (locationReady)      prayerVm.loadPrayerTimes() }
@@ -83,6 +86,15 @@ fun HomeScreen(
     val prefs       = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
     val isFirstOpen = remember { prefs.getBoolean("is_first_open", true) }
     var dialogDismissed by remember { mutableStateOf(false) }
+    var showCityDialog by remember { mutableStateOf(false) }
+
+    if (showCityDialog) {
+        CitySelectionDialog(
+            onDismiss = { showCityDialog = false },
+            onCity = { prayerVm.selectTunisiaCity(it); showCityDialog = false },
+            onGps = { prayerVm.useGpsLocation(); showCityDialog = false },
+        )
+    }
 
     if (permissionGranted && !gpsEnabled && isFirstOpen && !dialogDismissed) {
         GpsActivationDialog(
@@ -116,7 +128,7 @@ fun HomeScreen(
                     when (val s = state) {
                         is UiState.Loading -> PrayerTimesLoadingCard()
                         is UiState.Error   -> PrayerTimesErrorCard(s.message) { prayerVm.loadPrayerTimes() }
-                        is UiState.Success -> PrayerTimesCard(s.data)
+                        is UiState.Success -> PrayerTimesCard(s.data, { showCityDialog = true }, prayerVm::adjustPrayer)
                     }
                     Spacer(Modifier.height(6.dp))
                 }
@@ -154,7 +166,7 @@ fun HomeScreen(
                 when (val s = state) {
                     is UiState.Loading -> PrayerTimesLoadingCard()
                     is UiState.Error   -> PrayerTimesErrorCard(s.message) { prayerVm.loadPrayerTimes() }
-                    is UiState.Success -> PrayerTimesCard(s.data)
+                    is UiState.Success -> PrayerTimesCard(s.data, { showCityDialog = true }, prayerVm::adjustPrayer)
                 }
 
                 Spacer(Modifier.height(12.dp))
@@ -244,7 +256,11 @@ private val prayerIcons = mapOf(
 )
 
 @Composable
-fun PrayerTimesCard(pt: app.nouralroh.viewmodel.PrayerTimes) {
+fun PrayerTimesCard(
+    pt: app.nouralroh.viewmodel.PrayerTimes,
+    onChangeCity: () -> Unit = {},
+    onAdjustPrayer: (String, Int) -> Unit = { _, _ -> },
+) {
     var currentTimeMillis by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(pt.nextPrayerAtMillis) {
         while (true) {
@@ -264,8 +280,8 @@ fun PrayerTimesCard(pt: app.nouralroh.viewmodel.PrayerTimes) {
     val pulse by inf.animateFloat(0.35f, 1f,
         infiniteRepeatable(tween(900), RepeatMode.Reverse), "pulse")
 
-    val now    = Calendar.getInstance()
-    val nowMin = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE)
+    val now = ZonedDateTime.now(runCatching { ZoneId.of(pt.timezone) }.getOrDefault(ZoneId.systemDefault()))
+    val nowMin = now.hour * 60 + now.minute
 
     val prayers = listOf(
         Triple("الفجر",  "Fajr",    pt.fajr),
@@ -307,7 +323,12 @@ fun PrayerTimesCard(pt: app.nouralroh.viewmodel.PrayerTimes) {
                                 Icon(Icons.Default.LocationOn, null, tint = QuranColors.Gold, modifier = Modifier.size(13.dp))
                             }
                             Text(pt.cityName, fontSize = 14.sp, color = QuranColors.GoldBright, fontWeight = FontWeight.Bold)
+                            TextButton(onClick = onChangeCity, contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
+                                Text("Modifier", fontSize = 9.sp, color = QuranColors.GoldDim)
+                            }
                         }
+                        Text(pt.source, fontSize = 8.sp,
+                            color = if (pt.isEstimate) QuranColors.GoldWarm else QuranColors.GoldDim)
                         Row(verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(5.dp),
                             modifier = Modifier.padding(start = 2.dp)) {
@@ -356,7 +377,8 @@ fun PrayerTimesCard(pt: app.nouralroh.viewmodel.PrayerTimes) {
                     val isPast = pMin <= nowMin
                     val isNext = latin == pt.nextPrayer
                     PrayerRowCreative(arabic = arabic, latin = latin, time = time,
-                        icon = prayerIcons[latin] ?: "🕌", isPast = isPast, isNext = isNext, pulse = pulse)
+                        icon = prayerIcons[latin] ?: "🕌", isPast = isPast, isNext = isNext, pulse = pulse,
+                        onMinus = { onAdjustPrayer(latin, -1) }, onPlus = { onAdjustPrayer(latin, 1) })
                     if (index < prayers.lastIndex) {
                         Box(Modifier.fillMaxWidth().height(0.5.dp).padding(horizontal = 14.dp)
                             .background(QuranColors.PanelBorder.copy(alpha = 0.25f)))
@@ -376,7 +398,8 @@ fun PrayerTimesCard(pt: app.nouralroh.viewmodel.PrayerTimes) {
 @Composable
 fun PrayerRowCreative(
     arabic: String, latin: String, time: String,
-    icon: String, isPast: Boolean, isNext: Boolean, pulse: Float
+    icon: String, isPast: Boolean, isNext: Boolean, pulse: Float,
+    onMinus: () -> Unit = {}, onPlus: () -> Unit = {},
 ) {
     val nameColor = when { isNext -> QuranColors.GoldBlaze; isPast -> QuranColors.GoldDim; else -> QuranColors.GoldBright }
     val timeColor = when { isNext -> QuranColors.GoldAccent; isPast -> QuranColors.GoldEmber; else -> QuranColors.GoldWarm }
@@ -412,8 +435,12 @@ fun PrayerRowCreative(
             }
         }
         if (isNext) { Box(Modifier.size(6.dp).clip(CircleShape).background(QuranColors.GoldBlaze.copy(alpha = pulse))) }
+        Text("−", color = QuranColors.GoldDim, fontSize = 16.sp,
+            modifier = Modifier.clickable(onClick = onMinus).padding(3.dp))
         Text(time, fontSize = 15.sp, color = timeColor,
             fontWeight = if (isNext) FontWeight.ExtraBold else FontWeight.Normal, letterSpacing = 0.5.sp)
+        Text("+", color = QuranColors.GoldDim, fontSize = 14.sp,
+            modifier = Modifier.clickable(onClick = onPlus).padding(3.dp))
     }
 }
 
@@ -646,6 +673,33 @@ fun PrayerTimesErrorCard(message: String, onRefresh: () -> Unit) {
             }
         }
     }
+}
+
+@Composable
+private fun CitySelectionDialog(
+    onDismiss: () -> Unit,
+    onCity: (app.nouralroh.prayer.TunisiaCity) -> Unit,
+    onGps: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Choisir une ville · اختر المدينة") },
+        text = {
+            Column(Modifier.heightIn(max = 430.dp).verticalScroll(rememberScrollState())) {
+                TextButton(onClick = onGps, modifier = Modifier.fillMaxWidth()) {
+                    Icon(Icons.Default.LocationOn, null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Utiliser ma position GPS")
+                }
+                TUNISIA_CITIES.forEach { city ->
+                    TextButton(onClick = { onCity(city) }, modifier = Modifier.fillMaxWidth()) {
+                        Text("${city.nameAr} · ${city.name}", modifier = Modifier.fillMaxWidth())
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Fermer") } },
+    )
 }
 
 @Composable

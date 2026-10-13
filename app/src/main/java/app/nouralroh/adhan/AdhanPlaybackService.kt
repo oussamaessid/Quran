@@ -6,6 +6,8 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
 import android.media.AudioAttributes
+import android.media.AudioFocusRequest
+import android.media.AudioManager
 import android.media.MediaPlayer
 import android.os.Build
 import android.os.IBinder
@@ -15,6 +17,11 @@ import app.nouralroh.R
 
 class AdhanPlaybackService : Service() {
     private var player: MediaPlayer? = null
+    private var focusRequest: AudioFocusRequest? = null
+    private val focusListener = AudioManager.OnAudioFocusChangeListener { change ->
+        if (change < 0) stopPlayback()
+    }
+    private val handler = android.os.Handler(android.os.Looper.getMainLooper())
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -30,6 +37,17 @@ class AdhanPlaybackService : Service() {
         val prayer = intent?.getStringExtra(EXTRA_PRAYER) ?: "Salat"
         createChannel()
         startForeground(NOTIFICATION_ID, notification(prayer))
+        val mode = AdhanPreferences.soundMode(this)
+        if (mode == "silent") {
+            getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID + 1, notification(prayer, false))
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+            return START_NOT_STICKY
+        }
+        if (!requestAudioFocus()) {
+            stopPlayback()
+            return START_NOT_STICKY
+        }
         player?.release()
         val audioFile = resources.openRawResourceFd(R.raw.adhan)
         player = MediaPlayer().apply {
@@ -46,12 +64,15 @@ class AdhanPlaybackService : Service() {
             prepare()
             start()
         }
+        if (mode == "short") handler.postDelayed({ stopPlayback() }, 8_000L)
         return START_NOT_STICKY
     }
 
     override fun onDestroy() {
+        handler.removeCallbacksAndMessages(null)
         player?.release()
         player = null
+        abandonAudioFocus()
         super.onDestroy()
     }
 
@@ -59,11 +80,39 @@ class AdhanPlaybackService : Service() {
         runCatching { player?.stop() }
         runCatching { player?.release() }
         player = null
+        abandonAudioFocus()
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
     }
 
-    private fun notification(prayer: String) = NotificationCompat.Builder(this, CHANNEL_ID)
+    private fun requestAudioFocus(): Boolean {
+        val manager = getSystemService(AudioManager::class.java)
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            @Suppress("DEPRECATION")
+            return manager.requestAudioFocus(
+                focusListener, AudioManager.STREAM_ALARM, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT,
+            ) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
+        }
+        val attributes = AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM)
+            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build()
+        focusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+            .setAudioAttributes(attributes)
+            .setOnAudioFocusChangeListener(focusListener).build()
+        return manager.requestAudioFocus(focusRequest!!) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
+    }
+
+    private fun abandonAudioFocus() {
+        val manager = getSystemService(AudioManager::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            focusRequest?.let { manager.abandonAudioFocusRequest(it) }
+        } else {
+            @Suppress("DEPRECATION")
+            manager.abandonAudioFocus(focusListener)
+        }
+        focusRequest = null
+    }
+
+    private fun notification(prayer: String, ongoing: Boolean = true) = NotificationCompat.Builder(this, CHANNEL_ID)
         .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
         .setContentTitle("Adhan · $prayer")
         .setContentText("C'est l'heure de la prière")
@@ -81,7 +130,8 @@ class AdhanPlaybackService : Service() {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             ),
         )
-        .setOngoing(true)
+        .setOngoing(ongoing)
+        .setAutoCancel(!ongoing)
         .setCategory(NotificationCompat.CATEGORY_ALARM)
         .build()
 

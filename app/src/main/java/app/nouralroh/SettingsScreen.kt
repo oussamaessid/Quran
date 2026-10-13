@@ -14,6 +14,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import app.nouralroh.adhan.AdhanPreferences
 import app.nouralroh.adhan.AdhanScheduler
+import app.nouralroh.adhan.AdhanPlaybackService
+import androidx.core.content.ContextCompat
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -27,6 +29,8 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.Button
+import androidx.compose.material3.FilterChip
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,6 +51,7 @@ import androidx.compose.foundation.layout.statusBars
 fun SettingsScreen(onBack: () -> Unit, onOpenWidgetDua: () -> Unit) {
     val context = LocalContext.current
     var adhanEnabled by remember { mutableStateOf(AdhanPreferences.isEnabled(context)) }
+    var soundMode by remember { mutableStateOf(AdhanPreferences.soundMode(context)) }
 
     BackHandler { onBack() }
 
@@ -109,6 +114,38 @@ fun SettingsScreen(onBack: () -> Unit, onOpenWidgetDua: () -> Unit) {
                     }
                 },
             )
+            if (adhanEnabled) {
+                Text("Prières avec Adhan", color = QuranColors.GoldBright, fontSize = 12.sp)
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    listOf("Fajr", "Dhuhr", "Asr", "Maghrib", "Isha").forEach { prayer ->
+                        var checked by remember(prayer) { mutableStateOf(AdhanPreferences.isPrayerEnabled(context, prayer)) }
+                        FilterChip(
+                            selected = checked,
+                            onClick = {
+                                checked = !checked
+                                AdhanPreferences.setPrayerEnabled(context, prayer, checked)
+                                AdhanScheduler.scheduleAll(context)
+                            },
+                            label = { Text(prayer.take(3), fontSize = 9.sp) },
+                        )
+                    }
+                }
+                Text("Son", color = QuranColors.GoldBright, fontSize = 12.sp)
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    listOf("full" to "Adhan complet", "short" to "Court", "silent" to "Silencieux").forEach { (mode, label) ->
+                        FilterChip(selected = soundMode == mode, onClick = {
+                            soundMode = mode; AdhanPreferences.setSoundMode(context, mode)
+                        }, label = { Text(label, fontSize = 9.sp) })
+                    }
+                }
+                Button(onClick = {
+                    ContextCompat.startForegroundService(context, Intent(context, AdhanPlaybackService::class.java)
+                        .putExtra(AdhanPlaybackService.EXTRA_PRAYER, "Test"))
+                }, modifier = Modifier.fillMaxWidth()) { Text("Tester l’audio") }
+                Button(onClick = { AdhanScheduler.scheduleTest(context) }, modifier = Modifier.fillMaxWidth()) {
+                    Text("Programmer un test dans 1 minute")
+                }
+            }
             SettingsCategoryRow(
                 icon = "🧩",
                 titleArabic = "الودجت",

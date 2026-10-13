@@ -16,6 +16,7 @@ object PrayerTimeCalculator {
     fun nextPrayer(
         prayers: List<Pair<String, String>>,
         zoneId: ZoneId,
+        tomorrowFajr: String? = null,
         clock: Clock = Clock.system(zoneId),
     ): NextPrayer {
         require(prayers.isNotEmpty())
@@ -30,7 +31,8 @@ object PrayerTimeCalculator {
             }
         }
 
-        val (name, value) = prayers.first()
+        val (name, firstValue) = prayers.first()
+        val value = tomorrowFajr ?: firstValue
         val occurrence = today.plusDays(1).atTime(LocalTime.parse(value)).atZone(zoneId)
         return NextPrayer(name, value, occurrence.toInstant().toEpochMilli())
     }
