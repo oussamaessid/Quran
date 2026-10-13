@@ -243,7 +243,10 @@ class MainActivity : ComponentActivity() {
                         )
                         AppScreen.SETTINGS -> SettingsScreen(
                             onBack = { currentScreen = AppScreen.HOME },
-                            onOpenWidgetDua = { currentScreen = AppScreen.WIDGET_DUA }
+                            onOpenWidgetDua = { currentScreen = AppScreen.WIDGET_DUA },
+                            onOpenAdPrivacyOptions = if (adManager.isPrivacyOptionsRequired) {
+                                { adManager.showPrivacyOptions(this@MainActivity) }
+                            } else null
                         )
                         AppScreen.WIDGET_DUA -> WidgetDuaScreen(
                             onBack = { currentScreen = AppScreen.SETTINGS }

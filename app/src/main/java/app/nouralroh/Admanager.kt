@@ -14,6 +14,10 @@ import com.google.android.gms.ads.RequestConfiguration
 import com.google.android.gms.ads.appopen.AppOpenAd
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
+import com.google.android.ump.ConsentDebugSettings
+import com.google.android.ump.ConsentInformation
+import com.google.android.ump.ConsentRequestParameters
+import com.google.android.ump.UserMessagingPlatform
 
 class AdManager(private val context: Context) {
 
@@ -58,10 +62,50 @@ class AdManager(private val context: Context) {
 
     private var launchMs = 0L
 
-    /** [allowAppOpen] = false au premier lancement (écran d'installation) : pas d'App Open. */
+    private val consentInformation: ConsentInformation =
+        UserMessagingPlatform.getConsentInformation(context)
+    private var adsInitialized = false
+
+    /** true si l'utilisateur (UE/UK…) doit pouvoir modifier son consentement depuis les Paramètres. */
+    val isPrivacyOptionsRequired: Boolean
+        get() = consentInformation.privacyOptionsRequirementStatus ==
+                ConsentInformation.PrivacyOptionsRequirementStatus.REQUIRED
+
+    /** Rouvre le formulaire de consentement Google (UMP) depuis les Paramètres. */
+    fun showPrivacyOptions(activity: Activity) {
+        UserMessagingPlatform.showPrivacyOptionsForm(activity) { e ->
+            if (e != null) Log.e(TAG, "❌ Privacy options form: ${e.message}")
+        }
+    }
+
+    /**
+     * Consentement RGPD (UMP) d'abord, puis AdMob. Aucune requête pub n'est faite
+     * tant que le consentement n'autorise pas les annonces.
+     * [allowAppOpen] = false au premier lancement (écran d'installation) : pas d'App Open.
+     */
     fun initAndShowAppOpen(activity: Activity, allowAppOpen: Boolean) {
-        Log.d(TAG, "1️⃣ init AdMob…")
         launchMs = System.currentTimeMillis()
+        val params = ConsentRequestParameters.Builder().apply {
+            if (TEST) setConsentDebugSettings(
+                ConsentDebugSettings.Builder(context).addTestDeviceHashedId(AdRequest.DEVICE_ID_EMULATOR).build()
+            )
+        }.build()
+        consentInformation.requestConsentInfoUpdate(activity, params, {
+            UserMessagingPlatform.loadAndShowConsentFormIfRequired(activity) { e ->
+                if (e != null) Log.e(TAG, "❌ Consent form: ${e.message}")
+                if (consentInformation.canRequestAds()) initAds(activity, allowAppOpen)
+            }
+        }, { e ->
+            Log.e(TAG, "❌ Consent info update: ${e.message}")
+        })
+        // Consentement déjà obtenu lors d'une session précédente : on n'attend pas le réseau.
+        if (consentInformation.canRequestAds()) initAds(activity, allowAppOpen)
+    }
+
+    private fun initAds(activity: Activity, allowAppOpen: Boolean) {
+        if (adsInitialized) return
+        adsInitialized = true
+        Log.d(TAG, "1️⃣ init AdMob…")
 
         val config = RequestConfiguration.Builder()
             .setTestDeviceIds(TEST_DEVICE_IDS)

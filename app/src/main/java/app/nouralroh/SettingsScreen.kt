@@ -48,8 +48,13 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.statusBars
 
 @Composable
-fun SettingsScreen(onBack: () -> Unit, onOpenWidgetDua: () -> Unit) {
+fun SettingsScreen(
+    onBack: () -> Unit,
+    onOpenWidgetDua: () -> Unit,
+    onOpenAdPrivacyOptions: (() -> Unit)? = null,
+) {
     val context = LocalContext.current
+    var showPrivacyPolicy by remember { mutableStateOf(false) }
     var adhanEnabled by remember { mutableStateOf(AdhanPreferences.isEnabled(context)) }
     var soundMode by remember { mutableStateOf(AdhanPreferences.soundMode(context)) }
 
@@ -153,8 +158,26 @@ fun SettingsScreen(onBack: () -> Unit, onOpenWidgetDua: () -> Unit) {
                 subtitle = "Widget Duʿāʾ pour l'écran d'accueil",
                 onClick = onOpenWidgetDua
             )
+            SettingsCategoryRow(
+                icon = "🔒",
+                titleArabic = "سياسة الخصوصية",
+                titleLatin = "Politique de confidentialité",
+                subtitle = "Données utilisées : localisation, publicités",
+                onClick = { showPrivacyPolicy = true }
+            )
+            if (onOpenAdPrivacyOptions != null) {
+                SettingsCategoryRow(
+                    icon = "📢",
+                    titleArabic = "خيارات الإعلانات",
+                    titleLatin = "Choix publicitaires",
+                    subtitle = "Modifier votre consentement aux annonces",
+                    onClick = onOpenAdPrivacyOptions
+                )
+            }
         }
     }
+
+    if (showPrivacyPolicy) PrivacyPolicyDialog(onDismiss = { showPrivacyPolicy = false })
 }
 
 @Composable
