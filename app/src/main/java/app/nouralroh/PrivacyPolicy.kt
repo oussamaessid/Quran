@@ -16,7 +16,7 @@ import androidx.compose.ui.unit.sp
  * Doit rester cohérente avec la section « Sécurité des données » de la Play Console
  * et avec docs/privacy-policy.html.
  */
-const val PRIVACY_POLICY_TEXT = """Dernière mise à jour : 13 octobre 2026
+const val PRIVACY_POLICY_TEXT = """Dernière mise à jour : 15 octobre 2026
 
 Cette application ne demande aucun compte et n'exploite aucun serveur propre. Les données ci-dessous sont traitées uniquement pour faire fonctionner l'application et afficher des publicités.
 
@@ -30,7 +30,7 @@ L'application affiche des publicités via Google AdMob. Google peut collecter l'
 Le texte du Coran et les récitations audio sont téléchargés depuis des serveurs publics (api.qurancdn.com, quranicaudio.com, quran.com, mp3quran.net, raw.githubusercontent.com). Ces requêtes ne contiennent aucune donnée personnelle, mais ces serveurs reçoivent votre adresse IP, comme pour toute connexion Internet.
 
 4. Données stockées sur l'appareil
-Vos favoris, votre progression de lecture (Khatm), vos réglages d'Adhan et le contenu téléchargé sont enregistrés uniquement sur votre appareil. Ils sont supprimés si vous effacez les données de l'application ou la désinstallez.
+Vos favoris, votre progression de lecture (Khatm), vos réglages d'Adhan et le contenu téléchargé sont enregistrés localement sur votre appareil. Selon vos réglages Android, certaines préférences peuvent être sauvegardées par le service de sauvegarde de votre appareil et restaurées lors d'une réinstallation ou d'un changement d'appareil. Vous pouvez supprimer les données locales depuis les réglages Android ou en désinstallant l'application ; la gestion et la suppression des sauvegardes dépendent des réglages de votre compte et de votre appareil.
 
 5. Sécurité
 Toutes les communications réseau sont chiffrées (HTTPS).
