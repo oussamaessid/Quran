@@ -11,7 +11,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -149,7 +149,7 @@ fun KhatmScreen(
 // ── Header ────────────────────────────────────────────────────────────────────
 @Composable
 private fun KhatmHeader(onBack: () -> Unit) {
-    Row(
+    LtrRow(
         Modifier.fillMaxWidth(),
         verticalAlignment     = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
@@ -163,7 +163,7 @@ private fun KhatmHeader(onBack: () -> Unit) {
                 .clickable { onBack() },
             contentAlignment = Alignment.Center
         ) {
-            Icon(Icons.Default.ArrowBack, null, tint = QuranColors.GoldDim, modifier = Modifier.size(20.dp))
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = QuranColors.GoldDim, modifier = Modifier.size(20.dp))
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Box(
@@ -181,13 +181,6 @@ private fun KhatmHeader(onBack: () -> Unit) {
                     color      = QuranColors.GoldBlaze,
                     fontWeight = FontWeight.Bold,
                     style      = TextStyle(textDirection = TextDirection.Rtl)
-                )
-                Text(
-                    "Khatm Al-Qur'an",
-                    fontSize      = 10.sp,
-                    color         = QuranColors.GoldWarm,
-                    fontStyle     = FontStyle.Italic,
-                    letterSpacing = 2.sp
                 )
             }
         }

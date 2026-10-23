@@ -1,5 +1,6 @@
 package app.nouralroh
 
+import androidx.compose.ui.AbsoluteAlignment
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
@@ -49,7 +50,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.LocationOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -764,7 +765,7 @@ private fun QiblaGate(
     ) {
         Box(
             modifier = Modifier
-                .align(Alignment.TopStart)
+                .align(AbsoluteAlignment.TopLeft)
                 .padding(16.dp)
                 .size(36.dp)
                 .clip(RoundedCornerShape(9.dp))
@@ -773,12 +774,14 @@ private fun QiblaGate(
                 .clickable { onBack() },
             contentAlignment = Alignment.Center,
         ) {
-            Icon(
-                imageVector = Icons.Default.ArrowBack,
-                contentDescription = null,
-                tint = QuranColors.GoldBright,
-                modifier = Modifier.size(17.dp),
-            )
+            LtrLayout {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = null,
+                    tint = QuranColors.GoldBright,
+                    modifier = Modifier.size(17.dp),
+                )
+            }
         }
 
         Column(
@@ -896,7 +899,7 @@ private fun QiblaHeader(onBack: () -> Unit) {
     Box(Modifier.fillMaxWidth().padding(horizontal = 8.dp)) {
         Box(
             modifier = Modifier
-                .align(Alignment.CenterStart)
+                .align(AbsoluteAlignment.CenterLeft)
                 .size(36.dp)
                 .clip(RoundedCornerShape(9.dp))
                 .background(QuranColors.Panel)
@@ -904,12 +907,14 @@ private fun QiblaHeader(onBack: () -> Unit) {
                 .clickable { onBack() },
             contentAlignment = Alignment.Center,
         ) {
-            Icon(
-                imageVector = Icons.Default.ArrowBack,
-                contentDescription = null,
-                tint = QuranColors.GoldBright,
-                modifier = Modifier.size(17.dp),
-            )
+            LtrLayout {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = null,
+                    tint = QuranColors.GoldBright,
+                    modifier = Modifier.size(17.dp),
+                )
+            }
         }
         Column(
             modifier = Modifier.align(Alignment.Center),
@@ -921,13 +926,6 @@ private fun QiblaHeader(onBack: () -> Unit) {
                 color = QuranColors.GoldBlaze,
                 fontWeight = FontWeight.Bold,
                 style = TextStyle(textDirection = TextDirection.Rtl),
-            )
-            Text(
-                text = "Al-Qibla",
-                fontSize = 11.sp,
-                color = QuranColors.GoldWarm,
-                fontStyle = FontStyle.Italic,
-                letterSpacing = 2.sp,
             )
         }
     }

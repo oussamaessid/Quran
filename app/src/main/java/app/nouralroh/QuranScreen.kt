@@ -127,6 +127,9 @@ fun QuranScreen(
     var savedHighlightKey  by remember { mutableStateOf<String?>(null) }
     var savedHighlightPage by remember { mutableStateOf(-1) }
 
+    val screenContext = LocalContext.current
+    LaunchedEffect(Unit) { ReadingStreak.record(screenContext) }
+
     LaunchedEffect(currentIndex) {
         val key = savedHighlightKey
         if (key != null && currentIndex == savedHighlightPage) {
@@ -163,7 +166,7 @@ fun QuranScreen(
     val pageData = (pages[pageNumber] as? UiState.Success)?.data
     val firstSurahId =
         pageData?.verses?.firstOrNull()?.verseKey?.substringBefore(":")?.toIntOrNull()
-    val surahName = firstSurahId?.let { id -> chapters.find { it.id == id }?.nameSimple } ?: ""
+    val surahName = firstSurahId?.let { id -> chapters.find { it.id == id }?.nameArabic } ?: ""
 
     val topBarState = when {
         showSurahAudioBar -> TopBarState.SURAH_AUDIO
@@ -383,13 +386,6 @@ fun AyahAudioTopBar(
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Text(
-                            chapter.nameSimple,
-                            fontSize = 12.sp,
-                            color = QuranColors.GoldBright,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1
-                        )
-                        Text(
                             chapter.nameArabic,
                             fontSize = 14.sp,
                             color = QuranColors.GoldBlaze,
@@ -398,7 +394,7 @@ fun AyahAudioTopBar(
                     }
                 }
                 Text(
-                    text = verseKey.replace(":", " : ayah "),
+                    text = "الآية " + verseKey.substringAfter(":"),
                     fontSize = 9.sp,
                     color = QuranColors.TextMuted,
                     fontStyle = FontStyle.Italic,
@@ -550,17 +546,13 @@ fun SurahAudioTopBar(
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Text(
-                            chapter.nameSimple, fontSize = 12.sp,
-                            color = QuranColors.GoldBright, fontWeight = FontWeight.Bold, maxLines = 1
-                        )
-                        Text(
                             chapter.nameArabic, fontSize = 14.sp,
                             color = QuranColors.GoldBlaze,
                             style = TextStyle(textDirection = TextDirection.Rtl)
                         )
                     }
                     Text(
-                        "Mishary Al-Afasy - ${chapter.versesCount} ayat",
+                        "مشاري العفاسي · ${chapter.versesCount} آية",
                         fontSize = 8.sp, color = QuranColors.TextMuted, fontStyle = FontStyle.Italic
                     )
                 }
@@ -1146,10 +1138,10 @@ fun PageTopStrip(quranPage: QuranPage, height: Dp) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Juz ${quranPage.juzNumber}", fontSize = 12.sp, color = QuranColors.GoldDim,
+            Text("الجزء ${quranPage.juzNumber}", fontSize = 12.sp, color = QuranColors.GoldDim,
                 style = TextStyle(textDirection = TextDirection.Rtl))
             Text("✦", fontSize = 6.sp, color = QuranColors.Gold.copy(alpha = 0.45f))
-            Text("Hizb ${quranPage.hizbNumber}", fontSize = 12.sp, color = QuranColors.GoldDim,
+            Text("الحزب ${quranPage.hizbNumber}", fontSize = 12.sp, color = QuranColors.GoldDim,
                 fontWeight = FontWeight.SemiBold, style = TextStyle(textDirection = TextDirection.Rtl))
         }
         HorizontalDivider(color = QuranColors.BismillahLine, thickness = 0.5.dp)
@@ -1181,7 +1173,8 @@ fun SurahIndexSheet(
     val filtered = remember(search, chapters) {
         if (search.isBlank()) chapters
         else chapters.filter {
-            it.nameSimple.contains(search, ignoreCase = true) ||
+            it.nameArabic.contains(search.trim()) ||
+                    it.nameSimple.contains(search, ignoreCase = true) ||
                     it.translatedName.name.contains(search, ignoreCase = true) ||
                     it.id.toString() == search.trim()
         }
@@ -1256,26 +1249,8 @@ fun SurahIndexSheet(
                                         color = if (isActive) QuranColors.GoldBright else QuranColors.TextMuted,
                                         fontWeight = FontWeight.Medium)
                                 }
-                                Column(Modifier.weight(1f)) {
-                                    Text(chapter.nameSimple, fontSize = 13.sp,
-                                        color = if (isActive) QuranColors.GoldBright else QuranColors.TextPrimary,
-                                        fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Normal)
-                                    Row(
-                                        horizontalArrangement = Arrangement.spacedBy(5.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(chapter.translatedName.name, fontSize = 10.sp,
-                                            color = QuranColors.TextMuted, fontStyle = FontStyle.Italic)
-                                        Text(".", fontSize = 10.sp, color = QuranColors.TextMuted)
-                                        Text("p.$firstPage", fontSize = 10.sp, color = QuranColors.TextMuted)
-                                        Text(".", fontSize = 10.sp, color = QuranColors.TextMuted)
-                                        Text("${chapter.versesCount}v", fontSize = 10.sp, color = QuranColors.TextMuted)
-                                        RevelationPill(chapter.revelationPlace)
-                                    }
-                                }
-                                Text(chapter.nameArabic, fontSize = 16.sp,
-                                    color = if (isActive) QuranColors.Gold else QuranColors.GoldDim,
-                                    style = TextStyle(textDirection = TextDirection.Rtl))
+                                SurahRowTitle(chapter.nameArabic, chapter.versesCount, firstPage,
+                                    chapter.revelationPlace, isActive, Modifier.weight(1f))
                             }
                             HorizontalDivider(color = QuranColors.PanelBorder, thickness = 0.5.dp,
                                 modifier = Modifier.padding(horizontal = 18.dp))

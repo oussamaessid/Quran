@@ -1,5 +1,9 @@
 package app.nouralroh
 
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -120,7 +124,7 @@ fun ErrorState(message: String, onRetry: () -> Unit) {
 fun RevelationPill(place: String) {
     val makki = place.lowercase() == "makkah"
     Text(
-        text     = if (makki) "Makki" else "Madani",
+        text     = if (makki) "مكية" else "مدنية",
         fontSize = 9.sp,
         color    = if (makki) QuranColors.MakkiText else QuranColors.MadaniText,
         modifier = Modifier
@@ -400,3 +404,45 @@ fun WordChip(
         )
     }
 }
+
+/** Ligne de sourate en arabe : nom en titre, puis « مكية · ٧ آيات · ص ١ ». */
+@Composable
+fun SurahRowTitle(
+    nameArabic: String, versesCount: Int, firstPage: Int, revelationPlace: String,
+    isActive: Boolean, modifier: Modifier = Modifier
+) {
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(nameArabic, fontSize = 17.sp,
+            color = if (isActive) QuranColors.GoldBlaze else QuranColors.TextPrimary,
+            fontWeight = if (isActive) FontWeight.Bold else FontWeight.SemiBold,
+            style = TextStyle(textDirection = TextDirection.Rtl))
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+            RevelationPill(revelationPlace)
+            Text("$versesCount آية · ص $firstPage", fontSize = 10.sp, color = QuranColors.TextMuted,
+                style = TextStyle(textDirection = TextDirection.Rtl))
+        }
+    }
+}
+
+/**
+ * En-tête toujours disposé de gauche à droite, même dans l'interface arabe :
+ * bouton retour à gauche (←), comme demandé. Le texte arabe garde son propre sens.
+ */
+@Composable
+fun LtrRow(
+    modifier: Modifier = Modifier,
+    horizontalArrangement: Arrangement.Horizontal = Arrangement.Start,
+    verticalAlignment: Alignment.Vertical = Alignment.Top,
+    content: @Composable RowScope.() -> Unit
+) {
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+        Row(modifier, horizontalArrangement, verticalAlignment, content)
+    }
+}
+
+/** Contenu affiché en gauche → droite (ex. flèche retour qui doit pointer à gauche). */
+@Composable
+fun LtrLayout(content: @Composable () -> Unit) {
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr, content = content)
+}
+

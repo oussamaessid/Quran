@@ -90,7 +90,7 @@ fun AyahAudioChoiceBar(
                         maxLines   = 1
                     )
                     Text(
-                        text      = verseKey.replace(":", " : ayah "),
+                        text      = "الآية " + verseKey.substringAfter(":"),
                         fontSize  = 9.sp,
                         color     = QuranColors.GoldDim,
                         fontStyle = FontStyle.Italic,
@@ -159,6 +159,8 @@ fun AyahAudioChoiceBar(
                     lineHeight = 15.sp,
                     color      = QuranColors.TextSecondary,
                     fontStyle  = FontStyle.Italic,
+                    // La traduction suit le sens de sa propre langue (ex. anglais LTR dans l'UI arabe).
+                    style      = TextStyle(textDirection = TextDirection.Content),
                     modifier   = Modifier
                         .fillMaxWidth()
                         .heightIn(max = 90.dp)

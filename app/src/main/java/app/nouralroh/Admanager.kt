@@ -63,6 +63,7 @@ class AdManager(private val context: Context) {
     }
 
     fun initAndShowAppOpen(activity: Activity, allowAppOpen: Boolean) {
+        if (AdsRemoval.isRemoved(context)) return   // achat « Retirer les publicités »
         launchMs = System.currentTimeMillis()
         val params = ConsentRequestParameters.Builder().apply {
             if (TEST) setConsentDebugSettings(
@@ -139,7 +140,6 @@ class AdManager(private val context: Context) {
 
     private fun showAppOpen(activity: Activity) {
         val ad = appOpenAd ?: run { loadInter(); return }
-        // Jamais par-dessus une activité fermée ou en arrière-plan.
         val resumed = (activity as? LifecycleOwner)?.lifecycle?.currentState
             ?.isAtLeast(Lifecycle.State.RESUMED) ?: true
         if (activity.isFinishing || activity.isDestroyed || !resumed) {
@@ -167,7 +167,7 @@ class AdManager(private val context: Context) {
     }
 
     fun loadInter() {
-        if (interstitialAd != null) return
+        if (interstitialAd != null || AdsRemoval.isRemoved(context)) return
         Log.d(TAG, "⬇️ Chargement Interstitial…")
         InterstitialAd.load(
             context,
@@ -187,6 +187,7 @@ class AdManager(private val context: Context) {
     }
 
     fun onNavigate(activity: Activity, doNavigate: () -> Unit) {
+        if (AdsRemoval.isRemoved(context)) { doNavigate(); return }
         navCount++
         Log.d(TAG, "🔢 Navigation #$navCount")
         val ad = interstitialAd

@@ -154,34 +154,10 @@ private fun SurahPickerItem(
 
             Spacer(Modifier.width(10.dp))
 
-            // Nom + traduction
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text       = chapter.nameSimple,
-                    fontSize   = 12.sp,
-                    color      = if (isActive) QuranColors.GoldBright else QuranColors.TextSecondary,
-                    fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium
-                )
-                Text(
-                    text      = chapter.translatedName.name,
-                    fontSize  = 9.sp,
-                    color     = QuranColors.TextMuted,
-                    fontStyle = FontStyle.Italic
-                )
-            }
-
-            // Pill Makki / Madani
-            RevelationPill(place = chapter.revelationPlace)
-
-            Spacer(Modifier.width(10.dp))
-
-            // Nom arabe
-            Text(
-                text       = chapter.nameArabic,
-                fontSize   = 16.sp,
-                color      = if (isActive) QuranColors.GoldBlaze else QuranColors.ArabicText.copy(alpha = 0.7f),
-                fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
-                style      = TextStyle(textDirection = TextDirection.Rtl)
+            SurahRowTitle(
+                nameArabic = chapter.nameArabic, versesCount = chapter.versesCount,
+                firstPage = chapter.pages.firstOrNull() ?: 1, revelationPlace = chapter.revelationPlace,
+                isActive = isActive, modifier = Modifier.weight(1f)
             )
         }
     }

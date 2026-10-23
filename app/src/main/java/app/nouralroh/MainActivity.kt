@@ -1,5 +1,6 @@
 package app.nouralroh
 
+import android.content.Context
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -50,6 +51,10 @@ private val AD_FREE_SCREENS = setOf(
 
 class MainActivity : ComponentActivity() {
 
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(LocaleHelper.wrap(newBase))
+    }
+
     private lateinit var adManager: AdManager
     private val forceUpdate = ForceUpdateManager(this)
 
@@ -91,6 +96,7 @@ class MainActivity : ComponentActivity() {
         // ── Mise à jour obligatoire, puis pub ─────────────────────
         // Les pubs ne démarrent que si l'app est à jour : jamais d'App Open
         // par-dessus l'écran de mise à jour. Pas d'App Open au premier lancement.
+        AdsRemoval.init(this)
         adManager = AdManager(this)
         if (!BuildConfig.DEBUG) {
             forceUpdate.check {

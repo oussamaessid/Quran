@@ -1,5 +1,7 @@
 package app.nouralroh.adhan
 
+import app.nouralroh.LocaleHelper
+import android.content.Context
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -16,6 +18,11 @@ import app.nouralroh.MainActivity
 import app.nouralroh.R
 
 class AdhanPlaybackService : Service() {
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(LocaleHelper.wrap(newBase))
+    }
+
     private var player: MediaPlayer? = null
     private var focusRequest: AudioFocusRequest? = null
     private val focusListener = AudioManager.OnAudioFocusChangeListener { change ->

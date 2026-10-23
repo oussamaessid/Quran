@@ -22,7 +22,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -553,19 +553,17 @@ fun TasbihScreen(onBack: () -> Unit) {
                         QuranColors.GoldBlaze.copy(0.6f), QuranColors.Gold.copy(0.5f), Color.Transparent
                     )))
             )
-            Row(
+            LtrRow(
                 Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.Default.ArrowBack, null, tint = QuranColors.GoldDim)
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = QuranColors.GoldDim)
                 }
                 Spacer(Modifier.weight(1f))
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("تَسْبِيح", color = QuranColors.GoldBlaze, fontSize = 20.sp,
                         fontWeight = FontWeight.Bold, style = TextStyle(textDirection = TextDirection.Rtl))
-                    Text("Tasbih", color = QuranColors.GoldDim, fontSize = 9.sp,
-                        letterSpacing = 1.5.sp, fontStyle = FontStyle.Italic)
                 }
                 Spacer(Modifier.weight(1f))
                 IconButton(onClick = { count = 0; totalCount = 0; completedCycles = 0 }) {

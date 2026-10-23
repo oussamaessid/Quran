@@ -1,5 +1,6 @@
 package app.nouralroh.components
 
+import app.nouralroh.SurahRowTitle
 import app.nouralroh.R
 import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
@@ -55,7 +56,8 @@ fun SurahIndexSheet(
     val filtered = remember(search, chapters) {
         if (search.isBlank()) chapters
         else chapters.filter {
-            it.nameSimple.contains(search, ignoreCase = true) ||
+            it.nameArabic.contains(search.trim()) ||
+                    it.nameSimple.contains(search, ignoreCase = true) ||
                     it.translatedName.name.contains(search, ignoreCase = true) ||
                     it.id.toString() == search.trim()
         }
@@ -114,24 +116,8 @@ fun SurahIndexSheet(
                                 color = if (isActive) QuranColors.GoldBright else QuranColors.TextMuted,
                                 fontWeight = FontWeight.Medium)
                         }
-                        Column(Modifier.weight(1f)) {
-                            Text(chapter.nameSimple, fontSize = 13.sp,
-                                color = if (isActive) QuranColors.GoldBright else QuranColors.TextPrimary,
-                                fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Normal)
-                            Row(horizontalArrangement = Arrangement.spacedBy(5.dp),
-                                verticalAlignment = Alignment.CenterVertically) {
-                                Text(chapter.translatedName.name, fontSize = 10.sp,
-                                    color = QuranColors.TextMuted, fontStyle = FontStyle.Italic)
-                                Text("·", fontSize = 10.sp, color = QuranColors.TextMuted)
-                                Text("p.$firstPage", fontSize = 10.sp, color = QuranColors.TextMuted)
-                                Text("·", fontSize = 10.sp, color = QuranColors.TextMuted)
-                                Text("${chapter.versesCount}v", fontSize = 10.sp, color = QuranColors.TextMuted)
-                                RevelationPill(chapter.revelationPlace)
-                            }
-                        }
-                        Text(chapter.nameArabic, fontSize = 16.sp,
-                            color = if (isActive) QuranColors.Gold else QuranColors.GoldDim,
-                            style = TextStyle(textDirection = TextDirection.Rtl))
+                        SurahRowTitle(chapter.nameArabic, chapter.versesCount, firstPage,
+                            chapter.revelationPlace, isActive, Modifier.weight(1f))
                     }
                     HorizontalDivider(color = QuranColors.PanelBorder, thickness = 0.5.dp,
                         modifier = Modifier.padding(horizontal = 18.dp))

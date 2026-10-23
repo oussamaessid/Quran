@@ -1,5 +1,8 @@
 package app.nouralroh.components
 
+import app.nouralroh.LtrRow
+import androidx.compose.ui.text.style.TextDirection
+import androidx.compose.ui.text.TextStyle
 import app.nouralroh.R
 import androidx.compose.ui.res.stringResource
 import android.content.res.Configuration
@@ -72,7 +75,7 @@ fun TopBar(
     val surahName    = firstSurahId?.let { id -> chapters.find { it.id == id }?.nameSimple } ?: ""
     val nameArabic    = firstSurahId?.let { id -> chapters.find { it.id == id }?.nameArabic } ?: ""
 
-    Row(
+    LtrRow(
         Modifier
             .fillMaxWidth()
             .background(QuranColors.Panel)
@@ -140,7 +143,7 @@ fun TopBar(
                             .clickable { onFontDecrease() },
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("A−", fontSize = 9.sp, color = QuranColors.GoldDim,
+                        Text("A−", style = TextStyle(textDirection = TextDirection.Ltr), fontSize = 9.sp, color = QuranColors.GoldDim,
                             fontWeight = FontWeight.Bold)
                     }
                     Text(
@@ -156,7 +159,7 @@ fun TopBar(
                             .clickable { onFontIncrease() },
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("A+", fontSize = 9.sp, color = QuranColors.GoldBright,
+                        Text("A+", style = TextStyle(textDirection = TextDirection.Ltr), fontSize = 9.sp, color = QuranColors.GoldBright,
                             fontWeight = FontWeight.Bold)
                     }
                 }

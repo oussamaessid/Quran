@@ -1,5 +1,6 @@
 package app.nouralroh
 
+import android.content.Context
 import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
@@ -11,6 +12,10 @@ import android.os.IBinder
 import androidx.core.app.NotificationCompat
 
 class AudioPlaybackService : Service() {
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(LocaleHelper.wrap(newBase))
+    }
 
     override fun onBind(intent: Intent): IBinder? = null
 

@@ -16,9 +16,9 @@ import java.net.URL
 import java.util.Locale
 
 /**
- * Traduction du Coran dans la langue du téléphone (6236 versets, ~1 Mo).
- * Téléchargée une seule fois depuis l'API quran.com puis lue hors ligne.
- * Aucune traduction pour un téléphone en arabe.
+ * Traduction du Coran (6236 versets, ~1 Mo) dans la langue choisie dans les Paramètres
+ * (« لغة الترجمة »). Téléchargée une seule fois depuis l'API quran.com puis lue hors ligne.
+ * L'interface de l'app reste en arabe : seule la traduction change de langue.
  */
 object TranslationRepository {
 
@@ -38,32 +38,60 @@ object TranslationRepository {
         "ms" to Source(39,  "Abdullah Muhammad Basmeih"),
     )
 
+    /** Langues de traduction proposées dans les Paramètres (nom dans sa propre langue). */
+    val LANGUAGES = listOf(
+        "fr" to "Français", "en" to "English", "id" to "Bahasa Indonesia", "tr" to "Türkçe",
+        "ur" to "اردو", "bn" to "বাংলা", "ms" to "Bahasa Melayu",
+    )
+    const val NONE = "none"
+
+    private const val PREFS = "app_prefs"
+    private const val KEY_LANG = "translation_language"
+    @Volatile private var language: String? = null
+
+    /** Langue choisie, ou par défaut celle du téléphone (aucune pour un téléphone en arabe). */
+    fun language(context: Context): String {
+        language?.let { return it }
+        val saved = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_LANG, null)
+        val lang = saved ?: Locale.getDefault().language.let { if (it == "in") "id" else it }.let {
+            when (it) { "ar" -> NONE; in SOURCES -> it; else -> "en" }
+        }
+        language = lang
+        return lang
+    }
+
+    fun setLanguage(context: Context, lang: String) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(KEY_LANG, lang).apply()
+        language = lang
+    }
+
     private val _ready = MutableStateFlow(false)
     /** true dès que la traduction est en mémoire : l'UI s'abonne pour se recomposer. */
     val ready: StateFlow<Boolean> = _ready.asStateFlow()
 
     private var texts: Map<String, String> = emptyMap()
+    private var loadedId: Int? = null
     private val mutex = Mutex()
 
     val source: Source?
-        get() {
-            // Android renvoie encore "in" (ancien code ISO) pour l'indonésien.
-            val lang = Locale.getDefault().language.let { if (it == "in") "id" else it }
-            if (lang == "ar") return null
-            return SOURCES[lang] ?: SOURCES.getValue("en")
-        }
+        get() = language?.let { SOURCES[it] }
 
-    fun text(verseKey: String): String? = texts[verseKey]
+    fun text(verseKey: String): String? =
+        if (loadedId != null && loadedId == source?.id) texts[verseKey] else null
 
     /** Charge la traduction depuis le cache, ou la télécharge. Silencieux en cas d'échec. */
     suspend fun ensureLoaded(context: Context) = withContext(Dispatchers.IO) {
-        val src = source ?: return@withContext
+        language(context)
+        val src = source
         mutex.withLock {
-            if (_ready.value) return@withLock
+            // Langue changée dans les paramètres : on oublie l'ancienne traduction.
+            if (src?.id != loadedId) { texts = emptyMap(); loadedId = null; _ready.value = false }
+            if (src == null || _ready.value) return@withLock
             val file = File(context.filesDir, "translations/${src.id}.json")
             runCatching {
                 if (!file.exists()) download(src.id, file)
                 texts = parse(file.readText())
+                loadedId = src.id
                 _ready.value = texts.isNotEmpty()
             }.onFailure {
                 Log.e(TAG, "❌ Traduction ${src.id} indisponible: ${it.message}")

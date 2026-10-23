@@ -9,7 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -58,19 +58,17 @@ fun WidgetDuaScreen(onBack: () -> Unit) {
                         QuranColors.GoldBlaze.copy(0.6f), QuranColors.Gold.copy(0.5f), Color.Transparent
                     )))
             )
-            Row(
+            LtrRow(
                 Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.Default.ArrowBack, null, tint = QuranColors.GoldDim)
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = QuranColors.GoldDim)
                 }
                 Spacer(Modifier.weight(1f))
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("وِدجِت الدُّعاء", color = QuranColors.GoldBlaze, fontSize = 18.sp,
                         fontWeight = FontWeight.Bold, style = TextStyle(textDirection = TextDirection.Rtl))
-                    Text("Widget Duʿāʾ", color = QuranColors.GoldDim, fontSize = 9.sp,
-                        letterSpacing = 1.5.sp, fontStyle = FontStyle.Italic)
                 }
                 Spacer(Modifier.weight(1f))
                 Spacer(Modifier.size(48.dp))

@@ -71,7 +71,7 @@ fun SalatScreen(
             Spacer(Modifier.height(16.dp))
 
             // ── TopBar ────────────────────────────────────────────────────────
-            Row(Modifier.fillMaxWidth(),
+            LtrRow(Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween) {
                 IconButton(onClick = onBack) {
@@ -81,8 +81,6 @@ fun SalatScreen(
                     Text("عداد الركعات", fontSize = 18.sp, color = QuranColors.GoldBlaze,
                         fontWeight = FontWeight.Bold,
                         style = TextStyle(textDirection = TextDirection.Rtl))
-                    Text(stringResource(R.string.salat_counter), fontSize = 10.sp, color = QuranColors.GoldDim,
-                        letterSpacing = 1.5.sp)
                 }
                 Box(Modifier.size(48.dp))
             }
@@ -97,7 +95,7 @@ fun SalatScreen(
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                 SalatCounterCard(
                     value       = s.rakaat,
-                    label       = "RAK'AHS",
+                    label       = "الركعات",
                     sublabel    = "/ $targetRakaat",
                     color       = if (s.prayerComplete) QuranColors.Gold else QuranColors.GoldBlaze,
                     bgGradient  = Brush.verticalGradient(listOf(QuranColors.Panel, QuranColors.AppBg)),
@@ -111,7 +109,7 @@ fun SalatScreen(
                 )
                 SalatCounterCard(
                     value       = s.sujoodTotal % 2,
-                    label       = "SUJOOD",
+                    label       = "السجدات",
                     sublabel    = stringResource(R.string.salat_in_rakah),
                     color       = QuranColors.GoldWarm,
                     bgGradient  = Brush.verticalGradient(listOf(QuranColors.Panel, QuranColors.AppBg)),
@@ -150,7 +148,7 @@ fun SalatScreen(
                 exit    = fadeOut(),
             ) {
                 val isComplete = s.prayerComplete
-                val isRakah    = s.lastEventLabel?.contains("Rak'ah") == true
+                val isRakah    = s.lastEventLabel?.startsWith("ركعة") == true
                 val bgColor    = when {
                     isComplete -> QuranColors.Gold.copy(.18f)
                     isRakah    -> QuranColors.GoldBlaze.copy(.12f)
@@ -298,7 +296,7 @@ fun SalatLightMeter(
                     fontWeight = if (isDark) FontWeight.Bold else FontWeight.Normal,
                 )
                 Text(
-                    "normal: ${stableLux.toInt()} lux",
+                    "المعتاد: ${stableLux.toInt()} lux",
                     color = QuranColors.GoldDim.copy(.45f),
                     fontSize = 9.sp,
                 )
@@ -331,7 +329,7 @@ fun SalatPrayerSelector(selected: PrayerConfig, onSelect: (PrayerConfig) -> Unit
                 selected = isSel, onClick = { onSelect(prayer) },
                 label = {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(prayer.name, fontSize = 10.sp)
+                        Text(prayer.arabicName, fontSize = 12.sp)
                         Text("(${prayer.rakaat})", fontSize = 8.sp,
                             color = if (isSel) QuranColors.Panel else QuranColors.GoldDim)
                     }

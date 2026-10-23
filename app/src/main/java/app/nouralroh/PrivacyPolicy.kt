@@ -33,13 +33,16 @@ Le texte du Coran, ses traductions et les récitations audio sont téléchargés
 4. Données stockées sur l'appareil
 Vos favoris, votre progression de lecture (Khatm), vos réglages d'Adhan et le contenu téléchargé sont enregistrés localement sur votre appareil. Selon vos réglages Android, certaines préférences peuvent être sauvegardées par le service de sauvegarde de votre appareil et restaurées lors d'une réinstallation ou d'un changement d'appareil. Vous pouvez supprimer les données locales depuis les réglages Android ou en désinstallant l'application ; la gestion et la suppression des sauvegardes dépendent des réglages de votre compte et de votre appareil.
 
-5. Sécurité
+5. Achat intégré
+L'option « Retirer les publicités » est vendue via Google Play. Le paiement est traité entièrement par Google : l'application ne reçoit aucune donnée bancaire, seulement la confirmation de l'achat, enregistrée sur l'appareil.
+
+6. Sécurité
 Toutes les communications réseau sont chiffrées (HTTPS).
 
-6. Enfants
+7. Enfants
 L'application ne s'adresse pas spécifiquement aux enfants de moins de 13 ans et ne collecte pas sciemment de données les concernant.
 
-7. Contact
+8. Contact
 Pour toute question : barshatech123@gmail.com"""
 
 const val PRIVACY_POLICY_TEXT_EN = """Last updated: October 23, 2026
@@ -58,13 +61,16 @@ Quran text, translations and audio recitations are downloaded from public server
 4. Data stored on the device
 Your bookmarks, reading progress (Khatm), Adhan settings and downloaded content are stored locally on your device. Depending on your Android settings, some preferences may be backed up by your device's backup service and restored on reinstall or on a new device. You can delete local data from Android settings or by uninstalling the app; management and deletion of backups depend on your account and device settings.
 
-5. Security
+5. In-app purchase
+The "Remove ads" option is sold through Google Play. Payment is handled entirely by Google: the app receives no payment details, only the purchase confirmation, stored on the device.
+
+6. Security
 All network communications are encrypted (HTTPS).
 
-6. Children
+7. Children
 The app is not specifically directed at children under 13 and does not knowingly collect data about them.
 
-7. Contact
+8. Contact
 For any question: barshatech123@gmail.com"""
 
 @Composable

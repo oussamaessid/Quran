@@ -149,9 +149,9 @@ class SalatViewModel(app: Application) : AndroidViewModel(app), SensorEventListe
                 rakaat         = newRakaat,
                 prayerComplete = isComplete,
                 lastEventLabel = when {
-                    isComplete -> "🕌 Prière complète — الحمد لله"
-                    rakahDone  -> "Rak'ah $newRakaat / $targetRakaat ✓"
-                    else       -> "Sujood $newSujood / 2"
+                    isComplete -> "🕌 اكتملت الصلاة — الحمد لله"
+                    rakahDone  -> "ركعة $newRakaat / $targetRakaat ✓"
+                    else       -> "سجدة $newSujood / 2"
                 },
                 pulseSujood = s.pulseSujood + 1,
                 pulseRakah  = if (rakahDone) s.pulseRakah + 1 else s.pulseRakah,

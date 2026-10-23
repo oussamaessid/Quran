@@ -1,5 +1,7 @@
 package app.nouralroh
 
+import androidx.compose.ui.AbsoluteAlignment
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import android.content.Context
 import android.content.Intent
@@ -169,6 +171,7 @@ fun HomeScreen(
                     is UiState.Success -> PrayerTimesCard(s.data, { showCityDialog = true }, prayerVm::adjustPrayer)
                 }
 
+
                 Spacer(Modifier.height(12.dp))
 
                 Row(
@@ -195,7 +198,7 @@ fun HomeScreen(
                     )
                     NavCardVertical(
                         icon = "🎧", titleArabic = "الاستماع إلى القرآن", titleLatin = "Audio",
-                        subtitle = stringResource(R.string.home_audio_sub), badge = "AUDIO",
+                        subtitle = stringResource(R.string.home_audio_sub), badge = "استماع",
                         accentColor = QuranColors.GoldBlaze, titleColor = QuranColors.GoldBlaze,
                         gradientStart = QuranColors.Panel, gradientEnd = QuranColors.AppBg,
                         onClick = onOpenAudio
@@ -209,21 +212,21 @@ fun HomeScreen(
                     )
                     NavCardVertical(
                         icon = "📿", titleArabic = "التسبيح", titleLatin = "Tasbih",
-                        subtitle = stringResource(R.string.home_tasbih_sub), badge = "DHIKR",
+                        subtitle = stringResource(R.string.home_tasbih_sub), badge = "ذكر",
                         accentColor = QuranColors.GoldBlaze, titleColor = QuranColors.GoldBlaze,
                         gradientStart = QuranColors.Panel, gradientEnd = QuranColors.AppBg,
                         onClick = onOpenTasbih
                     )
                     NavCardVertical(
                         icon = "🤲", titleArabic = "الأذكار والأدعية", titleLatin = "Adhkar & Duas",
-                        subtitle = stringResource(R.string.home_adhkar_sub), badge = "ADHKAR",
+                        subtitle = stringResource(R.string.home_adhkar_sub), badge = "أذكار",
                         accentColor = QuranColors.GoldBlaze, titleColor = QuranColors.GoldBlaze,
                         gradientStart = QuranColors.Panel, gradientEnd = QuranColors.AppBg,
                         onClick = onOpenAdhkar
                     )
                     NavCardVertical(
                         icon = "🌙", titleArabic = "ختم القرآن", titleLatin = "Khatm",
-                        subtitle = stringResource(R.string.home_khatm_sub), badge = "KHATM",
+                        subtitle = stringResource(R.string.home_khatm_sub), badge = "ختمة",
                         accentColor = QuranColors.GoldBlaze, titleColor = QuranColors.GoldBlaze,
                         gradientStart = QuranColors.Panel, gradientEnd = QuranColors.AppBg,
                         onClick = onOpenKhatm
@@ -236,7 +239,7 @@ fun HomeScreen(
 
         IconButton(
             onClick = onOpenSettings,
-            modifier = Modifier.align(Alignment.TopEnd).padding(top = 6.dp, end = 6.dp)
+            modifier = Modifier.align(AbsoluteAlignment.TopRight).padding(top = 6.dp, end = 6.dp)
                 .size(40.dp).clip(CircleShape)
                 .background(QuranColors.Panel.copy(alpha = 0.7f))
                 .border(1.dp, QuranColors.PanelBorder, CircleShape)
@@ -327,7 +330,7 @@ fun PrayerTimesCard(
                                 Text(stringResource(R.string.common_edit), fontSize = 9.sp, color = QuranColors.GoldDim)
                             }
                         }
-                        Text(pt.source, fontSize = 8.sp,
+                        Text(arabicSource(pt.source), fontSize = 8.sp,
                             color = if (pt.isEstimate) QuranColors.GoldWarm else QuranColors.GoldDim)
                         Row(verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(5.dp),
@@ -350,7 +353,7 @@ fun PrayerTimesCard(
                             Row(verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                                 Box(Modifier.size(5.dp).clip(CircleShape).background(QuranColors.GoldBlaze.copy(alpha = pulse)))
-                                Text(pt.nextPrayer, fontSize = 11.sp, color = QuranColors.GoldBlaze,
+                                Text(arabicPrayerName(pt.nextPrayer), fontSize = 13.sp, color = QuranColors.GoldBlaze,
                                     fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp)
                             }
                             Text(pt.nextTime, fontSize = 22.sp, color = QuranColors.GoldAccent,
@@ -424,7 +427,6 @@ fun PrayerRowCreative(
             Text(arabic, fontSize = 14.sp, color = nameColor,
                 fontWeight = if (isNext) FontWeight.Bold else FontWeight.Medium,
                 style = TextStyle(textDirection = TextDirection.Rtl))
-            Text(latin, fontSize = 9.sp, color = nameColor.copy(alpha = 0.45f), letterSpacing = 0.8.sp)
         }
         if (isPast && !isNext) {
             Box(Modifier.size(17.dp).clip(CircleShape)
@@ -498,11 +500,9 @@ fun NavCardVertical(
                     style = TextStyle(textDirection = TextDirection.Rtl), lineHeight = 22.sp)
                 Box(Modifier.width(36.dp).height(1.dp).clip(RoundedCornerShape(1.dp))
                     .background(Brush.horizontalGradient(listOf(accentColor.copy(alpha = 0.7f), Color.Transparent))))
-                Text(titleLatin, fontSize = 10.sp, letterSpacing = 1.8.sp,
-                    fontWeight = FontWeight.SemiBold, color = accentColor.copy(alpha = 0.75f))
-                // Sous-titre en écriture latine : sens LTR forcé, sinon « 604 » passe en fin de ligne.
-                Text(subtitle, fontSize = 9.sp, color = QuranColors.TextMuted,
-                    style = TextStyle(letterSpacing = 0.3.sp, textDirection = TextDirection.Ltr))
+                // Interface arabe : pas de translittération latine, le sous-titre décrit la section.
+                Text(subtitle, fontSize = 10.sp, color = QuranColors.TextMuted,
+                    style = TextStyle(textDirection = TextDirection.Rtl))
             }
             Column(horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -540,10 +540,8 @@ fun NavCardLandscape(icon: String, titleArabic: String, titleLatin: String, subt
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Text(titleArabic, fontSize = 15.sp, color = QuranColors.GoldBlaze,
                 fontWeight = FontWeight.Bold, style = TextStyle(textDirection = TextDirection.Rtl))
-            Text(titleLatin, fontSize = 11.sp, color = QuranColors.GoldBright,
-                fontWeight = FontWeight.Medium, letterSpacing = 1.sp)
-            Text(subtitle, fontSize = 9.sp, color = QuranColors.TextMuted,
-                style = TextStyle(textDirection = TextDirection.Ltr))
+            Text(subtitle, fontSize = 10.sp, color = QuranColors.TextMuted,
+                style = TextStyle(textDirection = TextDirection.Rtl))
         }
         Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null,
             tint = QuranColors.GoldDim, modifier = Modifier.size(20.dp))
@@ -623,16 +621,31 @@ fun AppHeader() {
             fontSize = if (isLandscape) 22.sp else 28.sp,
             color = QuranColors.GoldBlaze, fontWeight = FontWeight.Bold,
             style = TextStyle(textDirection = TextDirection.Rtl))
-        Text(stringResource(R.string.app_subtitle), fontSize = 11.sp, color = QuranColors.GoldWarm,
+        val subtitle = stringResource(R.string.app_subtitle)
+        if (subtitle != "تطبيق القرآن") Text(subtitle, fontSize = 11.sp, color = QuranColors.GoldWarm,
             fontStyle = FontStyle.Italic, letterSpacing = 2.sp)
         Spacer(Modifier.height(if (isLandscape) 6.dp else 10.dp))
-        // Date dans la langue du téléphone (ex. « vendredi 23 oct. 2026 », « Friday 23 Oct 2026 »).
+        // Date grégorienne en arabe, chiffres latins comme les horaires (ex. « الجمعة 23 أكتوبر 2026 »).
         val dayStr = remember {
             java.time.LocalDate.now()
-                .format(java.time.format.DateTimeFormatter.ofPattern("EEEE d MMM yyyy", java.util.Locale.getDefault()))
-                .replaceFirstChar { it.titlecase(java.util.Locale.getDefault()) }
+                .format(java.time.format.DateTimeFormatter.ofPattern("EEEE d MMMM yyyy", java.util.Locale.forLanguageTag("ar-TN")))
         }
         Text(dayStr, fontSize = 10.sp, color = QuranColors.GoldDim)
+        // Série de jours consécutifs de lecture du Coran.
+        val streakContext = LocalContext.current
+        val streak = remember { ReadingStreak.current(streakContext) }
+        if (streak > 0) {
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "🔥 " + stringResource(R.string.streak_label) + " · " +
+                    pluralStringResource(R.plurals.streak_days, streak, streak),
+                fontSize = 11.sp, color = QuranColors.GoldBright, fontWeight = FontWeight.SemiBold,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(QuranColors.GoldSubtle)
+                    .padding(horizontal = 12.dp, vertical = 4.dp)
+            )
+        }
         Spacer(Modifier.height(if (isLandscape) 6.dp else 10.dp))
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.weight(1f).height(0.5.dp).background(
@@ -720,8 +733,6 @@ fun NavCard(modifier: Modifier, icon: String, titleArabic: String,
             }
             Text(titleArabic, fontSize = 15.sp, color = QuranColors.GoldBlaze, fontWeight = FontWeight.Bold,
                 style = TextStyle(textDirection = TextDirection.Rtl), textAlign = TextAlign.Center)
-            Text(titleLatin, fontSize = 11.sp, color = QuranColors.GoldBright,
-                fontWeight = FontWeight.Medium, letterSpacing = 1.sp)
             HorizontalDivider(color = QuranColors.PanelBorder, thickness = 0.5.dp,
                 modifier = Modifier.padding(horizontal = 8.dp))
             Text(subtitle, fontSize = 9.sp, color = QuranColors.TextMuted,
@@ -730,3 +741,21 @@ fun NavCard(modifier: Modifier, icon: String, titleArabic: String,
         }
     }
 }
+
+// ─── Libellés arabes ──────────────────────────────────────────────────────────
+private val ARABIC_PRAYER_NAMES = mapOf(
+    "Fajr" to "الفجر", "Sunrise" to "الشروق", "Dhuhr" to "الظهر",
+    "Asr" to "العصر", "Maghrib" to "المغرب", "Isha" to "العشاء",
+)
+
+private fun arabicPrayerName(name: String): String = ARABIC_PRAYER_NAMES[name] ?: name
+
+/** La source des horaires est enregistrée en cache en français : traduite à l'affichage. */
+private fun arabicSource(source: String): String = source
+    .replace("Estimation AlAdhan", "تقدير AlAdhan")
+    .replace("méthode Tunisie 18", "طريقة تونس")
+    .replace("méthode existante", "الطريقة المعتادة")
+    .replace("ajustement local", "تعديل يدوي")
+    .replace("hors ligne", "دون اتصال")
+    .replace("Cache", "محفوظ")
+

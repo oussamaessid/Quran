@@ -1,5 +1,6 @@
 package app.nouralroh
 
+import androidx.compose.ui.AbsoluteAlignment
 import androidx.compose.ui.res.stringResource
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
@@ -171,10 +172,11 @@ fun RecitersScreen(
                     .background(QuranColors.GoldWarm.copy(alpha = 0.1f))
                     .border(0.5.dp, QuranColors.GoldDim.copy(alpha = 0.4f), CircleShape)
                     .clickable { onBack() }
-                    .align(Alignment.CenterStart),
+                    .align(AbsoluteAlignment.CenterLeft),
                 contentAlignment = Alignment.Center
             ) {
-                Text("‹", fontSize = 22.sp, color = QuranColors.GoldBlaze, fontWeight = FontWeight.Light)
+                Text("‹", fontSize = 22.sp, color = QuranColors.GoldBlaze, fontWeight = FontWeight.Light,
+                    style = TextStyle(textDirection = TextDirection.Ltr))
             }
 
             Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -189,7 +191,7 @@ fun RecitersScreen(
 
             if (uiState is AudioUiState.Ready) {
                 Box(
-                    Modifier.align(Alignment.CenterEnd)
+                    Modifier.align(AbsoluteAlignment.CenterRight)
                         .clip(RoundedCornerShape(20.dp))
                         .background(QuranColors.GoldBlaze.copy(alpha = 0.12f))
                         .border(0.5.dp, QuranColors.GoldBlaze.copy(alpha = 0.35f), RoundedCornerShape(20.dp))
@@ -298,7 +300,9 @@ fun ReciterCard(reciter: Reciter, onClick: () -> Unit) {
                 ))
         )
 
-        Row(
+        // Carte déjà ordonnée « à l'arabe » (flèche à gauche, nom et micro à droite) :
+        // disposition gauche → droite fixe pour ne pas l'inverser une seconde fois.
+        LtrRow(
             Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp)
@@ -331,8 +335,8 @@ fun ReciterCard(reciter: Reciter, onClick: () -> Unit) {
                     textAlign  = TextAlign.End,
                     style      = TextStyle(textDirection = TextDirection.Rtl)
                 )
-                // Latin name — secondary
-                Text(
+                // Second nom seulement s'il diffère (les noms sont désormais en arabe).
+                if (reciter.name != reciter.nameArabic) Text(
                     reciter.name,
                     fontSize  = 10.sp,
                     color     = QuranColors.GoldBright.copy(alpha = 0.65f),
@@ -412,10 +416,11 @@ fun SurahsScreen(
                         .background(QuranColors.GoldWarm.copy(alpha = 0.1f))
                         .border(0.5.dp, QuranColors.GoldDim.copy(alpha = 0.4f), CircleShape)
                         .clickable { onBack() }
-                        .align(Alignment.CenterStart),
+                        .align(AbsoluteAlignment.CenterLeft),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("‹", fontSize = 22.sp, color = QuranColors.GoldBlaze, fontWeight = FontWeight.Light)
+                    Text("‹", fontSize = 22.sp, color = QuranColors.GoldBlaze, fontWeight = FontWeight.Light,
+                    style = TextStyle(textDirection = TextDirection.Ltr))
                 }
 
                 Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -431,7 +436,7 @@ fun SurahsScreen(
                 }
 
                 Box(
-                    Modifier.align(Alignment.CenterEnd)
+                    Modifier.align(AbsoluteAlignment.CenterRight)
                         .clip(RoundedCornerShape(20.dp))
                         .background(QuranColors.GoldBlaze.copy(alpha = 0.12f))
                         .border(0.5.dp, QuranColors.GoldBlaze.copy(alpha = 0.35f), RoundedCornerShape(20.dp))
@@ -588,7 +593,7 @@ fun SurahCard(
             )
         }
 
-        Row(
+        LtrRow(
             Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -629,16 +634,6 @@ fun SurahCard(
                     overflow   = TextOverflow.Ellipsis,
                     textAlign  = TextAlign.End,
                     style      = TextStyle(textDirection = TextDirection.Rtl)
-                )
-                // Translated name in French — secondary
-                Text(
-                    surah.translatedName,
-                    fontSize  = 10.sp,
-                    color     = if (isActive) QuranColors.GoldBright else QuranColors.GoldBright.copy(alpha = 0.6f),
-                    maxLines  = 1,
-                    overflow  = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.End,
-                    fontStyle = FontStyle.Italic
                 )
             }
 

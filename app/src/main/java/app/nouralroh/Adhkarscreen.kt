@@ -1,5 +1,9 @@
 package app.nouralroh
 
+import app.nouralroh.data.TranslationRepository
+import app.nouralroh.data.AdhkarTranslations
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -14,11 +18,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -59,6 +63,41 @@ data class AdhkarItem(
     val source : String,
     val times  : Int = 1
 )
+
+// Libellés des catégories dans la langue de l'app (titleFr sert de clé).
+private val ADHKAR_TITLES = mapOf(
+    "Matin" to R.string.adhkar_t_morning,
+    "Soir" to R.string.adhkar_t_evening,
+    "Sommeil" to R.string.adhkar_t_sleep,
+    "Après la prière" to R.string.adhkar_t_after_prayer,
+    "Toutes prières" to R.string.adhkar_t_all_prayers,
+    "Après Fajr" to R.string.adhkar_t_after_fajr,
+    "Après Dhuhr" to R.string.adhkar_t_after_dhuhr,
+    "Après Asr" to R.string.adhkar_t_after_asr,
+    "Après Maghrib" to R.string.adhkar_t_after_maghrib,
+    "Après Isha" to R.string.adhkar_t_after_isha,
+    "Dua Qunoot" to R.string.adhkar_t_qunoot,
+    "Ablutions" to R.string.adhkar_t_wudu,
+    "Mosquée" to R.string.adhkar_t_mosque,
+    "Entrée" to R.string.adhkar_t_enter,
+    "Sortie" to R.string.adhkar_t_exit,
+    "Maison" to R.string.adhkar_t_home,
+    "Voyage" to R.string.adhkar_t_travel,
+    "Départ" to R.string.adhkar_t_departure,
+    "En montant" to R.string.adhkar_t_mounting,
+    "Retour" to R.string.adhkar_t_return,
+    "Le Tashahhud" to R.string.adhkar_t_tashahhud,
+    "Repas" to R.string.adhkar_t_meals,
+    "Avant le repas" to R.string.adhkar_t_before_meal,
+    "Après le repas" to R.string.adhkar_t_after_meal,
+    "Boisson" to R.string.adhkar_t_drink,
+    "Divers" to R.string.adhkar_t_misc,
+    "Duas coraniques" to R.string.adhkar_t_quranic,
+)
+
+@Composable
+private fun adhkarTitle(titleFr: String): String =
+    ADHKAR_TITLES[titleFr]?.let { stringResource(it) } ?: titleFr
 
 val ADHKAR_CATEGORIES = listOf(
 
@@ -279,7 +318,7 @@ val ADHKAR_CATEGORIES = listOf(
     AdhkarCategory(
         titleArabic   = "أذكار المسجد",
         titleFr       = "Mosquée",
-        icon          = "⛪",
+        icon          = "🕌",
         accentColor   = Color(0xFF81C784),
         subCategories = listOf(
             AdhkarSubCategory(
@@ -628,7 +667,7 @@ fun AdhkarListScreen(
             .background(Brush.verticalGradient(listOf(QuranColors.AppBg, QuranColors.Panel, QuranColors.AppBg)))
     ) {
         Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
-        AdhkarTopBar(title = "الأذكار والأدعية", subtitle = "Adhkar & Duas", onBack = onBack)
+        AdhkarTopBar(title = "الأذكار والأدعية", subtitle = "", onBack = onBack)
 
         LazyColumn(
             contentPadding      = PaddingValues(horizontal = 18.dp, vertical = 16.dp),
@@ -678,7 +717,7 @@ fun AdhkarSubCategoryScreen(
         Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
         AdhkarTopBar(
             title       = category.titleArabic,
-            subtitle    = category.titleFr,
+            subtitle    = adhkarTitle(category.titleFr),
             onBack      = onBack,
             accentColor = category.accentColor
         )
@@ -745,9 +784,9 @@ fun AdhkarSubCategoryScreen(
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                             Text(sub.titleArabic, fontSize = 17.sp, fontWeight = FontWeight.Bold,
                                 color = category.accentColor, style = TextStyle(textDirection = TextDirection.Rtl))
-                            Text(sub.titleFr, fontSize = 9.sp, color = QuranColors.GoldDim,
+                            Text(adhkarTitle(sub.titleFr), fontSize = 9.sp, color = QuranColors.GoldDim,
                                 letterSpacing = 0.8.sp, fontStyle = FontStyle.Italic)
-                            Text("${sub.items.size} dhikr", fontSize = 8.sp,
+                            Text("${sub.items.size} ذكر", fontSize = 9.sp,
                                 color = QuranColors.GoldDim.copy(alpha = 0.6f))
                         }
                         Box(
@@ -756,7 +795,7 @@ fun AdhkarSubCategoryScreen(
                                 .border(0.5.dp, category.accentColor.copy(alpha = 0.3f), CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.Default.ArrowForward, null,
+                            Icon(Icons.AutoMirrored.Filled.ArrowForward, null,
                                 tint = category.accentColor.copy(alpha = 0.7f), modifier = Modifier.size(15.dp))
                         }
                     }
@@ -781,6 +820,10 @@ fun AdhkarDetailScreen(
 
     val item       = items[currentIndex]
     val isLastItem = currentIndex == items.lastIndex
+    val context    = LocalContext.current
+    val translationReady by TranslationRepository.ready.collectAsStateWithLifecycle()
+    LaunchedEffect(Unit) { TranslationRepository.ensureLoaded(context) }
+    val meaning = remember(currentIndex, translationReady) { AdhkarTranslations.meaning(context, item.arabic) }
     val isDone     = repeatCount >= item.times
 
     val globalProgress = (currentIndex.toFloat() +
@@ -812,7 +855,7 @@ fun AdhkarDetailScreen(
     ) {
         Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
 
-        AdhkarTopBar(title = titleArabic, subtitle = titleFr, onBack = onBack, accentColor = accentColor)
+        AdhkarTopBar(title = titleArabic, subtitle = adhkarTitle(titleFr), onBack = onBack, accentColor = accentColor)
 
         Column(Modifier.padding(horizontal = 20.dp, vertical = 10.dp)) {
             Box(Modifier.fillMaxWidth().height(5.dp).clip(RoundedCornerShape(3.dp))) {
@@ -889,6 +932,22 @@ fun AdhkarDetailScreen(
                     )
                 }
 
+                meaning?.let { m ->
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        m.text,
+                        fontSize   = 13.sp,
+                        fontStyle  = FontStyle.Italic,
+                        style      = TextStyle(textDirection = TextDirection.Content),
+                        color      = QuranColors.TextSecondary,
+                        textAlign  = TextAlign.Center,
+                        lineHeight = 19.sp,
+                        modifier   = Modifier.fillMaxWidth()
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(m.label, fontSize = 9.sp, color = accentColor.copy(alpha = 0.6f))
+                }
+
                 Spacer(Modifier.height(28.dp))
 
                 if (item.times > 1) {
@@ -961,7 +1020,7 @@ fun AdhkarDetailScreen(
         ) {
             NavButton(
                 label       = "السابق",
-                icon        = Icons.Default.KeyboardArrowLeft,
+                icon        = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
                 iconOnLeft  = true,
                 enabled     = currentIndex > 0,
                 accentColor = accentColor,
@@ -970,7 +1029,7 @@ fun AdhkarDetailScreen(
             )
             NavButton(
                 label       = if (isLastItem && isDone) "إنهاء" else "التالي",
-                icon        = if (isLastItem && isDone) Icons.Default.Check else Icons.Default.KeyboardArrowRight,
+                icon        = if (isLastItem && isDone) Icons.Default.Check else Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 iconOnLeft  = false,
                 enabled     = isDone,
                 highlighted = isDone,
@@ -1065,22 +1124,23 @@ fun AdhkarCategoryRow(
             }
 
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Box(
+                // Badge seulement s'il apporte une info (« بعد الصلاة »), pas s'il répète le titre.
+                val badge = adhkarTitle(category.titleFr)
+                if (!category.titleArabic.contains(badge)) Box(
                     Modifier.clip(RoundedCornerShape(5.dp))
                         .background(category.accentColor.copy(alpha = 0.12f))
                         .border(0.5.dp, category.accentColor.copy(alpha = 0.3f), RoundedCornerShape(5.dp))
                         .padding(horizontal = 6.dp, vertical = 2.dp)
                 ) {
-                    Text(category.titleFr.uppercase(), fontSize = 7.sp,
-                        color = category.accentColor.copy(alpha = 0.8f),
-                        letterSpacing = 1.2.sp, fontWeight = FontWeight.Bold)
+                    Text(badge, fontSize = 9.sp,
+                        color = category.accentColor.copy(alpha = 0.85f), fontWeight = FontWeight.Bold)
                 }
                 Text(category.titleArabic, fontSize = 17.sp, color = category.accentColor,
                     fontWeight = FontWeight.Bold, style = TextStyle(textDirection = TextDirection.Rtl))
                 val countLabel = if (category.hasSubCategories)
                     stringResource(R.string.adhkar_sections, category.subCategories.size)
                 else
-                    "${category.items.size} dhikr"
+                    "${category.items.size} ذكر"
                 Text(countLabel, fontSize = 9.sp, color = QuranColors.GoldDim)
             }
 
@@ -1090,7 +1150,7 @@ fun AdhkarCategoryRow(
                     .border(0.5.dp, category.accentColor.copy(alpha = 0.3f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.ArrowForward, null,
+                Icon(Icons.AutoMirrored.Filled.ArrowForward, null,
                     tint = category.accentColor.copy(alpha = 0.75f), modifier = Modifier.size(16.dp))
             }
         }
@@ -1147,19 +1207,20 @@ fun AdhkarTopBar(
             .fillMaxWidth()
             .background(Brush.horizontalGradient(listOf(QuranColors.Panel, QuranColors.AppBg, QuranColors.Panel)))
     ) {
-        Row(
+        LtrRow(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 8.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.Default.ArrowBack, null, tint = QuranColors.GoldDim)
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = QuranColors.GoldDim)
             }
             Spacer(Modifier.weight(1f))
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(title, color = accentColor, fontSize = 20.sp, fontWeight = FontWeight.Bold, style = TextStyle(textDirection = TextDirection.Rtl))
-                Text(subtitle, color = QuranColors.GoldDim, fontSize = 9.sp, letterSpacing = 1.5.sp, fontStyle = FontStyle.Italic)
+                if (subtitle.isNotBlank() && !title.contains(subtitle))
+                    Text(subtitle, color = QuranColors.GoldDim, fontSize = 10.sp)
             }
             Spacer(Modifier.weight(1f))
             Spacer(Modifier.size(48.dp))

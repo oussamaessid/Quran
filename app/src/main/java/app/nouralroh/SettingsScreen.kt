@@ -1,5 +1,18 @@
 package app.nouralroh
 
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
+import app.nouralroh.data.TranslationRepository
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.material3.RadioButtonDefaults
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.AlertDialog
+import android.content.ContextWrapper
+import android.content.Context
+import android.app.Activity
 import androidx.compose.ui.res.stringResource
 import android.app.AlarmManager
 import android.content.Intent
@@ -28,7 +41,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -61,6 +74,24 @@ fun SettingsScreen(
     var adhanEnabled by remember { mutableStateOf(AdhanPreferences.isEnabled(context)) }
     var soundMode by remember { mutableStateOf(AdhanPreferences.soundMode(context)) }
     val requestNotificationPermission = rememberNotificationPermissionRequest()
+    var showLanguageDialog by remember { mutableStateOf(false) }
+    val adsRemoved by AdsRemoval.removed.collectAsStateWithLifecycle()
+    val adsPrice by AdsRemoval.price.collectAsStateWithLifecycle()
+    var translationLanguage by remember { mutableStateOf(TranslationRepository.language(context)) }
+    val scope = rememberCoroutineScope()
+
+    if (showLanguageDialog) {
+        TranslationLanguageDialog(
+            current = translationLanguage,
+            onDismiss = { showLanguageDialog = false },
+            onSelect = { lang ->
+                showLanguageDialog = false
+                translationLanguage = lang
+                TranslationRepository.setLanguage(context, lang)
+                scope.launch { TranslationRepository.ensureLoaded(context) }   // télécharge la nouvelle traduction
+            },
+        )
+    }
 
     BackHandler { onBack() }
 
@@ -83,18 +114,19 @@ fun SettingsScreen(
                         QuranColors.GoldBlaze.copy(0.6f), QuranColors.Gold.copy(0.5f), Color.Transparent
                     )))
             )
-            Row(
+            LtrRow(
                 Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.Default.ArrowBack, null, tint = QuranColors.GoldDim)
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = QuranColors.GoldDim)
                 }
                 Spacer(Modifier.weight(1f))
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("الإعدادات", color = QuranColors.GoldBlaze, fontSize = 20.sp,
                         fontWeight = FontWeight.Bold, style = TextStyle(textDirection = TextDirection.Rtl))
-                    Text(stringResource(R.string.settings_title_latin), color = QuranColors.GoldDim, fontSize = 9.sp,
+                    val latin = stringResource(R.string.settings_title_latin)
+                    if (latin != "الإعدادات") Text(latin, color = QuranColors.GoldDim, fontSize = 9.sp,
                         letterSpacing = 1.5.sp, fontStyle = FontStyle.Italic)
                 }
                 Spacer(Modifier.weight(1f))
@@ -176,10 +208,28 @@ fun SettingsScreen(
                     Text(stringResource(R.string.adhan_autostart))
                 }
             }
+            if (adsRemoved || adsPrice != null) {
+                SettingsCategoryRow(
+                    icon = "✨",
+                    titleArabic = "إزالة الإعلانات",
+                    titleLatin = stringResource(R.string.remove_ads),
+                    subtitle = if (adsRemoved) stringResource(R.string.remove_ads_done)
+                               else stringResource(R.string.remove_ads_sub, adsPrice.orEmpty()),
+                    onClick = { if (!adsRemoved) context.findActivity()?.let { AdsRemoval.purchase(it) } }
+                )
+            }
+            SettingsCategoryRow(
+                icon = "🌐",
+                titleArabic = stringResource(R.string.translation_language),
+                titleLatin = TranslationRepository.LANGUAGES.firstOrNull { it.first == translationLanguage }?.second
+                    ?: stringResource(R.string.translation_none),
+                subtitle = stringResource(R.string.translation_language_sub),
+                onClick = { showLanguageDialog = true }
+            )
             SettingsCategoryRow(
                 icon = "🧩",
                 titleArabic = "الودجت",
-                titleLatin = "Widgets",
+                titleLatin = "",
                 subtitle = stringResource(R.string.widgets_sub),
                 onClick = onOpenWidgetDua
             )
@@ -265,10 +315,53 @@ private fun SettingsCategoryRow(
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(titleArabic, fontSize = 15.sp, color = QuranColors.GoldBlaze,
                 fontWeight = FontWeight.Bold, style = TextStyle(textDirection = TextDirection.Rtl))
-            Text(titleLatin, fontSize = 11.sp, color = QuranColors.GoldBright, fontWeight = FontWeight.Medium)
+            if (titleLatin.isNotBlank() && titleLatin != titleArabic)   // pas de doublon du titre
+                Text(titleLatin, fontSize = 11.sp, color = QuranColors.GoldBright, fontWeight = FontWeight.Medium)
             Text(subtitle, fontSize = 10.sp, color = QuranColors.TextMuted)
         }
         Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null,
             tint = QuranColors.GoldDim, modifier = Modifier.size(20.dp))
     }
 }
+
+@Composable
+private fun TranslationLanguageDialog(current: String, onDismiss: () -> Unit, onSelect: (String) -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.translation_language)) },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                (listOf(TranslationRepository.NONE to stringResource(R.string.translation_none)) + TranslationRepository.LANGUAGES)
+                    .forEach { (tag, name) ->
+                        Row(
+                            Modifier.fillMaxWidth().clickable { onSelect(tag) }.padding(vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = tag == current, onClick = { onSelect(tag) },
+                                colors = RadioButtonDefaults.colors(selectedColor = QuranColors.Gold)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(name, fontSize = 15.sp)
+                        }
+                    }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_close), color = QuranColors.GoldDim) }
+        },
+        containerColor = QuranColors.Panel,
+        titleContentColor = QuranColors.GoldBlaze,
+        textContentColor = QuranColors.TextSecondary,
+    )
+}
+
+private fun Context.findActivity(): Activity? {
+    var ctx: Context? = this
+    while (ctx is ContextWrapper) {
+        if (ctx is Activity) return ctx
+        ctx = ctx.baseContext
+    }
+    return null
+}
+

@@ -117,7 +117,8 @@ class AudioViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             try {
                 val reciters = withContext(Dispatchers.IO) {
-                    val rJson = URL("https://mp3quran.net/api/v3/reciters?language=fr").readText()
+                    // Interface en arabe : noms des récitateurs en arabe.
+                    val rJson = URL("https://mp3quran.net/api/v3/reciters?language=ar").readText()
                     parseReciters(rJson)
                 }
                 allReciters = reciters
