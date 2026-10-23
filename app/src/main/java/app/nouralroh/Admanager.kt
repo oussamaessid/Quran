@@ -46,8 +46,6 @@ class AdManager(private val context: Context) {
             get() = if (TEST) "ca-app-pub-3940256099942544/1033173712"
             else       "ca-app-pub-2498267529185476/7763292177"
 
-        // Bannière adaptative de l'accueil. À REMPLIR avec l'identifiant du bloc « Bannière »
-        // créé dans AdMob : tant qu'il est vide, aucune bannière en release.
         private const val BANNER_ID_RELEASE = ""
         val BANNER_ID: String?
             get() = if (TEST) "ca-app-pub-3940256099942544/9214589741"
@@ -62,7 +60,6 @@ class AdManager(private val context: Context) {
         UserMessagingPlatform.getConsentInformation(context)
     private var adsInitialized = false
 
-    /** true après consentement + initialisation AdMob : la bannière de l'accueil peut se charger. */
     private val _adsReady = MutableStateFlow(false)
     val adsReady: StateFlow<Boolean> = _adsReady.asStateFlow()
 
@@ -90,8 +87,6 @@ class AdManager(private val context: Context) {
             }
         }, { e ->
             Log.e(TAG, "❌ Consent info update: ${e.message}")
-            // Debug seulement : annonces de test même si le formulaire UMP n'est pas configuré
-            // dans AdMob (« Confidentialité et messages »). La release reste stricte.
             if (TEST) initAds(activity, allowAppOpen)
         })
         if (consentInformation.canRequestAds()) initAds(activity, allowAppOpen)
