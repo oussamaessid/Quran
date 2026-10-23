@@ -1,5 +1,6 @@
 package app.nouralroh
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.content.Context
 import android.Manifest
 import android.content.Intent
@@ -96,12 +97,14 @@ class MainActivity : ComponentActivity() {
         // ── Mise à jour obligatoire, puis pub ─────────────────────
         // Les pubs ne démarrent que si l'app est à jour : jamais d'App Open
         // par-dessus l'écran de mise à jour. Pas d'App Open au premier lancement.
-        AdsRemoval.init(this)
         adManager = AdManager(this)
         if (!BuildConfig.DEBUG) {
             forceUpdate.check {
                 adManager.initAndShowAppOpen(this, allowAppOpen = DataInstallManager.isInstalled(this))
             }
+        } else {
+            // Debug : annonces de test seulement (bannière), sans App Open ni contrôle de mise à jour.
+            adManager.initAndShowAppOpen(this, allowAppOpen = false)
         }
         // ↑ Chaîne : update check → init → load → show → loadInter (tout automatique)
 
@@ -204,7 +207,9 @@ class MainActivity : ComponentActivity() {
                             onInstallComplete = { currentScreen = AppScreen.HOME }
                         )
 
-                        AppScreen.HOME -> HomeScreen(
+                        AppScreen.HOME -> Column(Modifier.fillMaxSize()) {
+                          Box(Modifier.weight(1f)) {
+                          HomeScreen(
                             permissionGranted   = permissionGranted,
                             gpsEnabled          = gpsEnabled,
                             onRequestPermission = {
@@ -222,7 +227,12 @@ class MainActivity : ComponentActivity() {
                             onOpenSalat  = { goTo(AppScreen.SALAT)  },
                             onOpenAudio  = { goTo(AppScreen.AUDIO)  },
                             onOpenSettings = { currentScreen = AppScreen.SETTINGS }
-                        )
+                          )
+                          }
+                          // Bannière en bas de l'accueil uniquement.
+                          val adsReady by adManager.adsReady.collectAsStateWithLifecycle()
+                          HomeBanner(adsReady)
+                        }
 
                         AppScreen.QURAN  -> QuranScreen(
                             onBack = {

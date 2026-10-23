@@ -98,10 +98,6 @@
     <string name="tasbih_add">أضف إلى أذكاري</string>
     <string name="adhkar_sections">%1$d أقسام</string>
     <string name="tasbih_custom_count">%1$d مخصّص</string>
-    <string name="remove_ads">إزالة الإعلانات</string>
-    <string name="remove_ads_sub">شراء لمرة واحدة · %1$s</string>
-    <string name="remove_ads_done">تمت إزالة الإعلانات — جزاك الله خيرًا</string>
-    <string name="remove_ads_unavailable">غير متاح حاليًا</string>
     <string name="streak_label">سلسلة القراءة</string>
     <string name="adhkar_t_morning">الصباح</string>
     <string name="adhkar_t_evening">المساء</string>
@@ -133,6 +129,7 @@
     <string name="translation_language">لغة الترجمة</string>
     <string name="translation_none">بدون ترجمة</string>
     <string name="translation_language_sub">ترجمة معاني الآيات والأذكار</string>
+    <string name="ad_label">إعلان</string>
     <plurals name="streak_days">
         <item quantity="zero">٠ يوم</item>
         <item quantity="one">يوم واحد</item>

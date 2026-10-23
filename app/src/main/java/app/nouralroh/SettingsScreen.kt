@@ -75,8 +75,6 @@ fun SettingsScreen(
     var soundMode by remember { mutableStateOf(AdhanPreferences.soundMode(context)) }
     val requestNotificationPermission = rememberNotificationPermissionRequest()
     var showLanguageDialog by remember { mutableStateOf(false) }
-    val adsRemoved by AdsRemoval.removed.collectAsStateWithLifecycle()
-    val adsPrice by AdsRemoval.price.collectAsStateWithLifecycle()
     var translationLanguage by remember { mutableStateOf(TranslationRepository.language(context)) }
     val scope = rememberCoroutineScope()
 
@@ -207,16 +205,6 @@ fun SettingsScreen(
                 Button(onClick = { openAutostartSettings(context) }, modifier = Modifier.fillMaxWidth()) {
                     Text(stringResource(R.string.adhan_autostart))
                 }
-            }
-            if (adsRemoved || adsPrice != null) {
-                SettingsCategoryRow(
-                    icon = "✨",
-                    titleArabic = "إزالة الإعلانات",
-                    titleLatin = stringResource(R.string.remove_ads),
-                    subtitle = if (adsRemoved) stringResource(R.string.remove_ads_done)
-                               else stringResource(R.string.remove_ads_sub, adsPrice.orEmpty()),
-                    onClick = { if (!adsRemoved) context.findActivity()?.let { AdsRemoval.purchase(it) } }
-                )
             }
             SettingsCategoryRow(
                 icon = "🌐",

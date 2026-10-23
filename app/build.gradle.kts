@@ -78,7 +78,6 @@ dependencies {
     implementation("com.google.android.ump:user-messaging-platform:3.1.0")
     implementation("com.google.android.play:app-update-ktx:2.1.0")
     implementation("com.google.android.play:review-ktx:2.0.2")
-    implementation("com.android.billingclient:billing-ktx:7.1.1")
     implementation("androidx.work:work-runtime-ktx:2.9.0")
     implementation(libs.androidx.glance.appwidget)
 

@@ -1,5 +1,8 @@
 package app.nouralroh
 
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import android.app.Activity
 import android.content.Context
 import android.util.Log
@@ -43,6 +46,13 @@ class AdManager(private val context: Context) {
             get() = if (TEST) "ca-app-pub-3940256099942544/1033173712"
             else       "ca-app-pub-2498267529185476/7763292177"
 
+        // Bannière adaptative de l'accueil. À REMPLIR avec l'identifiant du bloc « Bannière »
+        // créé dans AdMob : tant qu'il est vide, aucune bannière en release.
+        private const val BANNER_ID_RELEASE = ""
+        val BANNER_ID: String?
+            get() = if (TEST) "ca-app-pub-3940256099942544/9214589741"
+            else BANNER_ID_RELEASE.ifBlank { null }
+
         private val TEST_DEVICE_IDS = listOf(
             AdRequest.DEVICE_ID_EMULATOR
         )
@@ -51,6 +61,10 @@ class AdManager(private val context: Context) {
     private val consentInformation: ConsentInformation =
         UserMessagingPlatform.getConsentInformation(context)
     private var adsInitialized = false
+
+    /** true après consentement + initialisation AdMob : la bannière de l'accueil peut se charger. */
+    private val _adsReady = MutableStateFlow(false)
+    val adsReady: StateFlow<Boolean> = _adsReady.asStateFlow()
 
     val isPrivacyOptionsRequired: Boolean
         get() = consentInformation.privacyOptionsRequirementStatus ==
@@ -63,7 +77,6 @@ class AdManager(private val context: Context) {
     }
 
     fun initAndShowAppOpen(activity: Activity, allowAppOpen: Boolean) {
-        if (AdsRemoval.isRemoved(context)) return   // achat « Retirer les publicités »
         launchMs = System.currentTimeMillis()
         val params = ConsentRequestParameters.Builder().apply {
             if (TEST) setConsentDebugSettings(
@@ -77,6 +90,9 @@ class AdManager(private val context: Context) {
             }
         }, { e ->
             Log.e(TAG, "❌ Consent info update: ${e.message}")
+            // Debug seulement : annonces de test même si le formulaire UMP n'est pas configuré
+            // dans AdMob (« Confidentialité et messages »). La release reste stricte.
+            if (TEST) initAds(activity, allowAppOpen)
         })
         if (consentInformation.canRequestAds()) initAds(activity, allowAppOpen)
     }
@@ -93,6 +109,7 @@ class AdManager(private val context: Context) {
 
         MobileAds.initialize(context) {
             Log.d(TAG, "2️⃣ AdMob prêt → vérification cooldown App Open")
+            _adsReady.value = true
             if (allowAppOpen && canShowAppOpen()) {
                 loadAppOpen(activity)
             } else {
@@ -167,7 +184,7 @@ class AdManager(private val context: Context) {
     }
 
     fun loadInter() {
-        if (interstitialAd != null || AdsRemoval.isRemoved(context)) return
+        if (interstitialAd != null) return
         Log.d(TAG, "⬇️ Chargement Interstitial…")
         InterstitialAd.load(
             context,
@@ -187,7 +204,6 @@ class AdManager(private val context: Context) {
     }
 
     fun onNavigate(activity: Activity, doNavigate: () -> Unit) {
-        if (AdsRemoval.isRemoved(context)) { doNavigate(); return }
         navCount++
         Log.d(TAG, "🔢 Navigation #$navCount")
         val ad = interstitialAd
