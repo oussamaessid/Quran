@@ -1,5 +1,6 @@
 package app.nouralroh.viewmodel
 
+import app.nouralroh.R
 import android.annotation.SuppressLint
 import android.app.Application
 import android.content.Context
@@ -146,7 +147,7 @@ class PrayerTimesViewModel(app: Application) : AndroidViewModel(app) {
             _state.value = UiState.Success(value)
             AdhanScheduler.updateTimings(getApplication(), pairs.toMap(), actualZone.id, date)
         } catch (_: Exception) {
-            if (_state.value !is UiState.Success) _state.value = UiState.Error("Horaires indisponibles, y compris hors connexion")
+            if (_state.value !is UiState.Success) _state.value = UiState.Error(getApplication<Application>().getString(R.string.prayer_times_unavailable))
         }
     }
 

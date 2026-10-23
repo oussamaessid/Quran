@@ -1,5 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">نور الروح</string>
-    <string name="dua_widget_label">Widget Duʿāʾ</string>
-    <string name="dua_widget_description">Affiche un Duʿāʾ qui change automatiquement sur votre écran d\'accueil, sans connexion Internet.</string>
+    <string name="app_name" translatable="false">نور الروح</string>
+    <string name="dua_widget_label" translatable="false">Widget Duʿāʾ</string>
+    <string name="dua_widget_description">Shows a Duʿāʾ on your home screen that changes automatically, no Internet needed.</string>
+    <string name="dua_widget_empty">No Duʿāʾ available right now</string>
+    <string name="common_retry">Retry</string>
+    <string name="common_close">Close</string>
+    <string name="common_back">Back</string>
+    <string name="common_loading">Loading…</string>
+    <string name="common_edit">Edit</string>
+    <string name="common_delete">Delete</string>
+    <string name="common_share">Share</string>
+    <string name="settings_title_latin">Settings</string>
+    <string name="app_subtitle">Quran App</string>
+    <string name="home_quran_sub">604 pages · 114 surahs</string>
+    <string name="home_audio_sub">Listen · Full recitations · 114 surahs</string>
+    <string name="home_audio_sub_short">Listen · Full recitations</string>
+    <string name="home_qibla_sub">Direction of Mecca</string>
+    <string name="home_tasbih_sub">Dhikr counter</string>
+    <string name="home_adhkar_sub">Daily remembrances</string>
+    <string name="home_khatm_sub">Reading tracker · 30 days · Custom</string>
+    <string name="home_khatm_sub_short">Reading tracker · 30 days</string>
+    <string name="badge_reading">READ</string>
+    <string name="badge_compass">COMPASS</string>
+    <string name="next_prayer">NEXT</string>
+    <string name="in_time">in %1$s</string>
+    <string name="choose_city">Choose a city · اختر المدينة</string>
+    <string name="use_gps">Use my GPS location</string>
+    <string name="prayer_times_unavailable">Prayer times unavailable, even offline</string>
+    <string name="adhan_prayers">Prayers with Adhan</string>
+    <string name="adhan_sound">Sound</string>
+    <string name="adhan_full">Full Adhan</string>
+    <string name="adhan_short">Short</string>
+    <string name="adhan_silent">Silent</string>
+    <string name="adhan_test_audio">Test audio</string>
+    <string name="adhan_test_1min">Schedule a test in 1 minute</string>
+    <string name="adhan_bg_hint">If the adhan doesn’t play, allow the app to run in the background:</string>
+    <string name="adhan_battery">Disable battery optimization</string>
+    <string name="adhan_autostart">Allow auto-start</string>
+    <string name="adhan_auto">Automatic Adhan</string>
+    <string name="adhan_on">On at prayer times</string>
+    <string name="adhan_off">Off</string>
+    <string name="adhan_time">It\'s time for prayer</string>
+    <string name="adhan_stop">Stop</string>
+    <string name="adhan_channel_desc">Plays the adhan at prayer times</string>
+    <string name="widgets_sub">Duʿāʾ widget for your home screen</string>
+    <string name="privacy_title">Privacy policy</string>
+    <string name="privacy_sub">Data used: location, ads</string>
+    <string name="ad_choices">Ad choices</string>
+    <string name="ad_choices_sub">Change your ad consent</string>
+    <string name="install_checking">Checking…</string>
+    <string name="install_done">Done ✓</string>
+    <string name="install_preparing">Preparing…</string>
+    <string name="install_failed">Download failed.\nCheck your connection and try again.</string>
+    <string name="saved_title">Saved ayahs</string>
+    <string name="saved_empty">No saved ayahs</string>
+    <string name="saved_hint">Tap an ayah, then ☆ to save it</string>
+    <string name="choice_full_top">Whole</string>
+    <string name="choice_full_bot">surah</string>
+    <string name="choice_ayah_top">Ayah</string>
+    <string name="choice_ayah_bot">only</string>
+    <string name="choice_rest_top">Ayah +</string>
+    <string name="choice_rest_bot">rest</string>
+    <string name="surahs_114">114 Surahs</string>
+    <string name="search_surah">Search surah…</string>
+    <string name="choose_surah">Choose a surah</string>
+    <string name="loading_page">Loading page %1$d…</string>
+    <string name="widget_intro">Add the Duʿāʾ widget to your home screen to regularly get a new Duʿāʾ without opening the app.</string>
+    <string name="widget_add">Add the widget</string>
+    <string name="audio_playing">Playing…</string>
+    <string name="salat_counter">Rak\'ah counter</string>
+    <string name="salat_in_rakah">in rak\'ah</string>
+    <string name="salat_waiting">— WAITING —</string>
+    <string name="salat_dark">🌑  DARK — SUJOOD ✓</string>
+    <string name="salat_sensor_on">SENSOR ON</string>
+    <string name="salat_sensor_off">SENSOR OFF</string>
+    <string name="salat_press_start">Press START to activate the sensor</string>
+    <string name="salat_start_label">Start</string>
+    <string name="salat_complete">✓ Prayer complete — الحمد لله</string>
+    <string name="salat_no_sensor">⚠ This phone has no light sensor.</string>
+    <string name="salat_inst1">Place the phone face up in front of you</string>
+    <string name="salat_inst2">FULL bar = normal light — standing / rukūʿ</string>
+    <string name="salat_inst3">EMPTY bar = dark — sujood detected → +1</string>
+    <string name="salat_inst4">2 sujood = 1 rak\'ah counted automatically</string>
+    <string name="salat_inst5">Stops automatically at the prayer\'s last rak\'ah</string>
+    <string name="salat_inst6">Haptic vibration after each completed rak\'ah</string>
+    <string name="salat_finished">✓  FINISHED</string>
+    <string name="salat_start">▶  START</string>
+    <string name="salat_pause">⏸  PAUSE</string>
+    <string name="salat_reset">↺  RESET</string>
+    <string name="tasbih_customize">Customize</string>
+    <string name="tasbih_active">ACTIVE</string>
+    <string name="tasbih_text">Dhikr text</string>
+    <string name="tasbih_repetitions">Number of repetitions</string>
+    <string name="tasbih_saved">Saved to the list</string>
+    <string name="tasbih_add">Add to my dhikr</string>
+    <string name="adhkar_sections">%1$d sections</string>
+    <string name="tasbih_custom_count">%1$d custom</string>
+    <plurals name="saved_count">
+        <item quantity="one">%d ayah</item>
+        <item quantity="other">%d ayahs</item>
+    </plurals>
 </resources>

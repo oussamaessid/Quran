@@ -1,5 +1,6 @@
 package app.nouralroh
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
@@ -1077,7 +1078,7 @@ fun AdhkarCategoryRow(
                 Text(category.titleArabic, fontSize = 17.sp, color = category.accentColor,
                     fontWeight = FontWeight.Bold, style = TextStyle(textDirection = TextDirection.Rtl))
                 val countLabel = if (category.hasSubCategories)
-                    "${category.subCategories.size} classes"
+                    stringResource(R.string.adhkar_sections, category.subCategories.size)
                 else
                     "${category.items.size} dhikr"
                 Text(countLabel, fontSize = 9.sp, color = QuranColors.GoldDim)

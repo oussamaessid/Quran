@@ -1,5 +1,6 @@
 package app.nouralroh
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
@@ -64,7 +65,7 @@ fun buildWordPositionMap(page: QuranPage): Map<Int, Int> {
 }
 
 @Composable
-fun LoadingState(message: String = "Loading…", light: Boolean = false) {
+fun LoadingState(message: String = stringResource(R.string.common_loading), light: Boolean = false) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -108,7 +109,7 @@ fun ErrorState(message: String, onRetry: () -> Unit) {
                     .padding(horizontal = 22.dp, vertical = 9.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text("Retry", color = QuranColors.GoldBright, fontSize = 13.sp,
+                Text(stringResource(R.string.common_retry), color = QuranColors.GoldBright, fontSize = 13.sp,
                     fontWeight = FontWeight.Medium)
             }
         }

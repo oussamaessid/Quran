@@ -1,5 +1,6 @@
 package app.nouralroh
 
+import androidx.compose.ui.res.stringResource
 import android.annotation.SuppressLint
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
@@ -70,6 +71,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.TextStyle
@@ -175,7 +177,7 @@ fun QuranScreen(
             .background(QuranColors.AppBg)
     ) {
         when (val cs = chaptersState) {
-            is UiState.Loading -> LoadingState("Opening Mus")
+            is UiState.Loading -> LoadingState(stringResource(R.string.common_loading))
             is UiState.Error -> ErrorState(cs.message) { vm.retryChapters() }
             is UiState.Success -> {
                 Column(Modifier.fillMaxSize()) {
@@ -728,7 +730,7 @@ fun MushafPager(
                         .border(1.dp, QuranColors.PageBorder, RoundedCornerShape(4.dp))
                 ) {
                     when (pageState) {
-                        null, is UiState.Loading -> LoadingState("Loading page $pageNum...", light = true)
+                        null, is UiState.Loading -> LoadingState(stringResource(R.string.loading_page, pageNum), light = true)
                         is UiState.Error -> ErrorState(pageState.message) { onRetry(pageNum) }
                         is UiState.Success -> if (pageNum == 605 || pageNum == 606) {
                             val screenH = LocalConfiguration.current.screenHeightDp.dp
@@ -853,6 +855,7 @@ fun MushafPageContent(
     val isShortPage = quranPage.pageNumber <= 2
     val audioActive = audioChoiceMade || showSurahAudioBar
     val density = LocalDensity.current
+    val context = LocalContext.current
     val isAyahPlusMode       by vm.isAyahPlusMode.collectAsStateWithLifecycle()
     val highlightedSavedKey  by vm.highlightedSavedKey.collectAsStateWithLifecycle()
 
@@ -965,7 +968,8 @@ fun MushafPageContent(
                         surahName = surahName,
                         pageNumber = quranPage.pageNumber,
                         vm = vm,
-                        onDismiss = onDismissAudio
+                        onDismiss = onDismissAudio,
+                        onShare = { ShareAyah.share(context, quranPage, selectedAyahKey, surahName) }
                     )
                 }
             }
@@ -1112,7 +1116,8 @@ fun MushafPageContent(
                     surahName = surahName,
                     pageNumber = quranPage.pageNumber,
                     vm = vm,
-                    onDismiss = onDismissAudio
+                    onDismiss = onDismissAudio,
+                    onShare = { ShareAyah.share(context, quranPage, selectedAyahKey, surahName) }
                 )
             }
         }
@@ -1197,7 +1202,7 @@ fun SurahIndexSheet(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("114 Surahs", fontSize = 17.sp, fontWeight = FontWeight.SemiBold,
+                Text(stringResource(R.string.surahs_114), fontSize = 17.sp, fontWeight = FontWeight.SemiBold,
                     color = QuranColors.GoldBright)
                 Text("القرآن الكريم", fontSize = 17.sp, color = QuranColors.GoldDim,
                     style = TextStyle(textDirection = TextDirection.Rtl))
@@ -1212,7 +1217,7 @@ fun SurahIndexSheet(
                         value = search,
                         onValueChange = { search = it },
                         singleLine = true,
-                        placeholder = { Text("Search surah...", color = QuranColors.TextMuted, fontSize = 13.sp) },
+                        placeholder = { Text(stringResource(R.string.search_surah), color = QuranColors.TextMuted, fontSize = 13.sp) },
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = QuranColors.GoldDim,
                             unfocusedBorderColor = QuranColors.PanelBorder,

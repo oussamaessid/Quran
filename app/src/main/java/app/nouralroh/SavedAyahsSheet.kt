@@ -1,5 +1,7 @@
 package app.nouralroh
 
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -67,14 +69,14 @@ fun SavedAyahsSheet(
                         modifier = Modifier.size(18.dp)
                     )
                     Text(
-                        "Ayahs sauvegardés",
+                        stringResource(R.string.saved_title),
                         fontSize   = 17.sp,
                         fontWeight = FontWeight.SemiBold,
                         color      = QuranColors.GoldBright
                     )
                 }
                 Text(
-                    "${savedAyahs.size} ayah${if (savedAyahs.size != 1) "s" else ""}",
+                    pluralStringResource(R.plurals.saved_count, savedAyahs.size, savedAyahs.size),
                     fontSize  = 12.sp,
                     color     = QuranColors.TextMuted,
                     fontStyle = FontStyle.Italic
@@ -94,13 +96,13 @@ fun SavedAyahsSheet(
                     ) {
                         Text("🔖", fontSize = 36.sp)
                         Text(
-                            "Aucun ayah sauvegardé",
+                            stringResource(R.string.saved_empty),
                             fontSize  = 14.sp,
                             color     = QuranColors.TextMuted,
                             fontStyle = FontStyle.Italic
                         )
                         Text(
-                            "Appuyez sur un ayah puis ☆ pour le sauvegarder",
+                            stringResource(R.string.saved_hint),
                             fontSize  = 11.sp,
                             color     = QuranColors.TextMuted.copy(alpha = 0.6f),
                             fontStyle = FontStyle.Italic
@@ -207,7 +209,7 @@ private fun SavedAyahRow(
         ) {
             Icon(
                 imageVector        = Icons.Default.Delete,
-                contentDescription = "Supprimer",
+                contentDescription = stringResource(R.string.common_delete),
                 tint               = Color(0xFFE57373),
                 modifier           = Modifier.size(14.dp)
             )

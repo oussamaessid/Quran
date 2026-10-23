@@ -1,5 +1,6 @@
 package app.nouralroh
 
+import androidx.compose.ui.res.stringResource
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -74,13 +75,13 @@ fun SalatScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween) {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Retour", tint = QuranColors.GoldDim)
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.common_back), tint = QuranColors.GoldDim)
                 }
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("عداد الركعات", fontSize = 18.sp, color = QuranColors.GoldBlaze,
                         fontWeight = FontWeight.Bold,
                         style = TextStyle(textDirection = TextDirection.Rtl))
-                    Text("Compteur de Rak'ahs", fontSize = 10.sp, color = QuranColors.GoldDim,
+                    Text(stringResource(R.string.salat_counter), fontSize = 10.sp, color = QuranColors.GoldDim,
                         letterSpacing = 1.5.sp)
                 }
                 Box(Modifier.size(48.dp))
@@ -111,7 +112,7 @@ fun SalatScreen(
                 SalatCounterCard(
                     value       = s.sujoodTotal % 2,
                     label       = "SUJOOD",
-                    sublabel    = "dans rak'ah",
+                    sublabel    = stringResource(R.string.salat_in_rakah),
                     color       = QuranColors.GoldWarm,
                     bgGradient  = Brush.verticalGradient(listOf(QuranColors.Panel, QuranColors.AppBg)),
                     borderBrush = Brush.verticalGradient(listOf(
@@ -223,8 +224,8 @@ fun SalatLightMeter(
         if (isDark) 0.12f else 0f, tween(120), label = "flash")
 
     val statusText = when {
-        !isActive -> "— EN ATTENTE —"
-        isDark    -> "🌑  SOMBRE — SUJOOD ✓"
+        !isActive -> stringResource(R.string.salat_waiting)
+        isDark    -> stringResource(R.string.salat_dark)
         else      -> "☀️  NORMAL"
     }
     val statusColor = when {
@@ -262,7 +263,7 @@ fun SalatLightMeter(
                     Box(Modifier.size(7.dp).clip(CircleShape).background(
                         if (isActive) QuranColors.GoldBlaze.copy(dotA)
                         else QuranColors.TextMuted.copy(.4f)))
-                    Text(if (isActive) "CAPTEUR ACTIF" else "CAPTEUR INACTIF",
+                    Text(if (isActive) stringResource(R.string.salat_sensor_on) else stringResource(R.string.salat_sensor_off),
                         color = if (isActive) QuranColors.GoldDim else QuranColors.TextMuted,
                         fontSize = 9.sp, letterSpacing = 1.5.sp)
                 }
@@ -311,7 +312,7 @@ fun SalatLightMeter(
                     .border(0.5.dp, QuranColors.Gold.copy(.2f), RoundedCornerShape(8.dp))
                     .padding(8.dp),
                     contentAlignment = Alignment.Center) {
-                    Text("Appuyez sur DÉMARRER pour activer le capteur",
+                    Text(stringResource(R.string.salat_press_start),
                         color = QuranColors.GoldDim.copy(.7f),
                         fontSize = 10.sp, textAlign = TextAlign.Center)
                 }
@@ -395,9 +396,9 @@ fun SalatProgressBar(progress: Float, rakaat: Int, target: Int, complete: Boolea
             )
         }
         Row(Modifier.fillMaxWidth().padding(top = 5.dp), Arrangement.SpaceBetween) {
-            Text("Début", color = QuranColors.GoldDim.copy(.5f), fontSize = 9.sp)
+            Text(stringResource(R.string.salat_start_label), color = QuranColors.GoldDim.copy(.5f), fontSize = 9.sp)
             Text(
-                if (complete) "✓ Prière complète — الحمد لله" else "$rakaat / $target",
+                if (complete) stringResource(R.string.salat_complete) else "$rakaat / $target",
                 color = if (complete) QuranColors.Gold else QuranColors.GoldDim,
                 fontSize = 9.sp,
                 fontWeight = if (complete) FontWeight.Bold else FontWeight.Normal,
@@ -426,15 +427,15 @@ fun SalatInstructionsCard(hasSensor: Boolean) {
                     Brush.horizontalGradient(listOf(QuranColors.GoldDim.copy(.4f), Color.Transparent))))
             }
             if (!hasSensor) {
-                Text("⚠ Ce téléphone ne possède pas de capteur de lumière.",
+                Text(stringResource(R.string.salat_no_sensor),
                     color = Color(0xFFE86060), fontSize = 11.sp, lineHeight = 16.sp)
             } else {
-                SalatInstRow("📱", "Posez le téléphone face vers le haut devant vous")
-                SalatInstRow("☀️", "Barre PLEINE = lumière normale — debout / rukū'")
-                SalatInstRow("🌑", "Barre VIDE = sombre — sujood détecté → +1")
-                SalatInstRow("✓",  "2 sujood = 1 rak'ah comptabilisée automatiquement")
-                SalatInstRow("🛑", "Arrêt automatique à la dernière rak'ah de la prière")
-                SalatInstRow("📳", "Vibration haptique à chaque rak'ah complète")
+                SalatInstRow("📱", stringResource(R.string.salat_inst1))
+                SalatInstRow("☀️", stringResource(R.string.salat_inst2))
+                SalatInstRow("🌑", stringResource(R.string.salat_inst3))
+                SalatInstRow("✓",  stringResource(R.string.salat_inst4))
+                SalatInstRow("🛑", stringResource(R.string.salat_inst5))
+                SalatInstRow("📳", stringResource(R.string.salat_inst6))
             }
         }
     }
@@ -469,7 +470,7 @@ fun SalatControlButtons(
                         .padding(horizontal = 32.dp, vertical = 16.dp),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text("✓  TERMINÉE", color = QuranColors.GoldDim.copy(.5f),
+                    Text(stringResource(R.string.salat_finished), color = QuranColors.GoldDim.copy(.5f),
                         fontSize = 13.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold)
                 }
             }
@@ -479,7 +480,7 @@ fun SalatControlButtons(
                     .clickable { onStart() }
                     .padding(horizontal = 32.dp, vertical = 16.dp),
                     contentAlignment = Alignment.Center) {
-                    Text("▶  DÉMARRER", color = QuranColors.AppBg, fontSize = 13.sp,
+                    Text(stringResource(R.string.salat_start), color = QuranColors.AppBg, fontSize = 13.sp,
                         letterSpacing = 2.sp, fontWeight = FontWeight.Bold)
                 }
             }
@@ -489,7 +490,7 @@ fun SalatControlButtons(
                     .clickable { onPause() }
                     .padding(horizontal = 28.dp, vertical = 16.dp),
                     contentAlignment = Alignment.Center) {
-                    Text("⏸  PAUSE", color = QuranColors.Gold, fontSize = 13.sp, letterSpacing = 2.sp)
+                    Text(stringResource(R.string.salat_pause), color = QuranColors.Gold, fontSize = 13.sp, letterSpacing = 2.sp)
                 }
             }
         }
@@ -499,7 +500,7 @@ fun SalatControlButtons(
             .clickable { onReset() }
             .padding(horizontal = 24.dp, vertical = 16.dp),
             contentAlignment = Alignment.Center) {
-            Text("↺  RESET", color = QuranColors.TextMuted, fontSize = 13.sp, letterSpacing = 2.sp)
+            Text(stringResource(R.string.salat_reset), color = QuranColors.TextMuted, fontSize = 13.sp, letterSpacing = 2.sp)
         }
     }
 }

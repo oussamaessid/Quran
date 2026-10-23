@@ -49,6 +49,7 @@ fun KhatmScreen(
     val plan       by khatmVm.plan.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()
     var showEditUnits by remember { mutableStateOf(false) }
+    val requestNotificationPermission = rememberNotificationPermissionRequest()
 
     BackHandler {
         onBack()
@@ -103,7 +104,10 @@ fun KhatmScreen(
                 KhatmReminderCard(
                     currentHour   = plan?.reminderHour,
                     currentMinute = plan?.reminderMinute,
-                    onSchedule    = { h, m -> khatmVm.scheduleReminder(h, m) },
+                    onSchedule    = { h, m ->
+                        requestNotificationPermission()
+                        khatmVm.scheduleReminder(h, m)
+                    },
                     onCancel      = { khatmVm.cancelReminder() }
                 )
 

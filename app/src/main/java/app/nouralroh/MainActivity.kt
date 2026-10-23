@@ -4,7 +4,6 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.LocationManager
-import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -44,6 +43,11 @@ enum class AppScreen {
     SETTINGS, WIDGET_DUA
 }
 
+// Écrans d'adoration : jamais d'interstitiel avant de les ouvrir.
+private val AD_FREE_SCREENS = setOf(
+    AppScreen.QURAN, AppScreen.SALAT, AppScreen.ADHKAR, AppScreen.KHATM, AppScreen.AUDIO
+)
+
 class MainActivity : ComponentActivity() {
 
     private lateinit var adManager: AdManager
@@ -53,7 +57,14 @@ class MainActivity : ComponentActivity() {
     private var pendingOpenScreen by mutableStateOf<AppScreen?>(null)
 
     private fun screenFromIntent(intent: Intent?): AppScreen? =
-        when (intent?.getStringExtra(EXTRA_OPEN_SCREEN)) {
+        if (BuildConfig.DEBUG) {
+            intent?.getStringExtra("demo_screen")?.let { name ->
+                runCatching { AppScreen.valueOf(name) }.getOrNull()
+            } ?: when (intent?.getStringExtra(EXTRA_OPEN_SCREEN)) {
+                OPEN_SCREEN_HOME -> AppScreen.HOME
+                else -> null
+            }
+        } else when (intent?.getStringExtra(EXTRA_OPEN_SCREEN)) {
             OPEN_SCREEN_HOME -> AppScreen.HOME
             else -> null
         }
@@ -73,13 +84,18 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         KhatmNotificationHelper.createChannel(this)
+        if (savedInstanceState == null && DataInstallManager.isInstalled(this)) {
+            ReviewPrompt.onSessionStart(this)
+        }
 
         // ── Mise à jour obligatoire, puis pub ─────────────────────
         // Les pubs ne démarrent que si l'app est à jour : jamais d'App Open
         // par-dessus l'écran de mise à jour. Pas d'App Open au premier lancement.
         adManager = AdManager(this)
-        forceUpdate.check {
-            adManager.initAndShowAppOpen(this, allowAppOpen = DataInstallManager.isInstalled(this))
+        if (!BuildConfig.DEBUG) {
+            forceUpdate.check {
+                adManager.initAndShowAppOpen(this, allowAppOpen = DataInstallManager.isInstalled(this))
+            }
         }
         // ↑ Chaîne : update check → init → load → show → loadInter (tout automatique)
 
@@ -123,8 +139,11 @@ class MainActivity : ComponentActivity() {
             var gpsEnabled        by remember { mutableStateOf(hasGps()) }
 
             // ── Navigation avec inter (jamais sur retour HOME) ─────
+            // Aucune pub avant la lecture, la prière ou les invocations : ce sont les
+            // pubs qui génèrent le plus d'avis 1★ sur les apps Coran.
             fun goTo(screen: AppScreen) {
-                adManager.onNavigate(this@MainActivity) { currentScreen = screen }
+                if (BuildConfig.DEBUG || screen in AD_FREE_SCREENS) currentScreen = screen
+                else adManager.onNavigate(this@MainActivity) { currentScreen = screen }
             }
 
             val permLauncher = rememberLauncherForActivityResult(
@@ -136,18 +155,8 @@ class MainActivity : ComponentActivity() {
                 gpsEnabled = hasGps()
             }
 
-            val notifPermLauncher = rememberLauncherForActivityResult(
-                ActivityResultContracts.RequestPermission()
-            ) {}
-
-            LaunchedEffect(Unit) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    if (ContextCompat.checkSelfPermission(
-                            this@MainActivity, Manifest.permission.POST_NOTIFICATIONS
-                        ) != PackageManager.PERMISSION_GRANTED
-                    ) notifPermLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                }
-            }
+            // POST_NOTIFICATIONS n'est plus demandé au lancement : voir
+            // rememberNotificationPermissionRequest (activation adhan / rappel khatm).
 
             val lifecycle = LocalLifecycleOwner.current.lifecycle
             DisposableEffect(lifecycle) {
@@ -210,7 +219,10 @@ class MainActivity : ComponentActivity() {
                         )
 
                         AppScreen.QURAN  -> QuranScreen(
-                            onBack = { currentScreen = AppScreen.HOME }  // retour direct, pas de pub
+                            onBack = {
+                                currentScreen = AppScreen.HOME  // retour direct, pas de pub
+                                ReviewPrompt.maybeAsk(this@MainActivity)
+                            }
                         )
                         AppScreen.QIBLA  -> QiblaScreen(
                             onBack = { currentScreen = AppScreen.HOME }

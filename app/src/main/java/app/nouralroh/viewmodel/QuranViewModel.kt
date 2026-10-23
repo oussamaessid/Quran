@@ -22,6 +22,7 @@ import app.nouralroh.data.SavedAyah
 import app.nouralroh.data.SavedAyahsRepository
 import app.nouralroh.data.SurahAudioTiming
 import app.nouralroh.data.TranslatedName
+import app.nouralroh.data.TranslationRepository
 import app.nouralroh.data.UiState
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
@@ -148,6 +149,7 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
     init {
         audioPlayer.onCompletion = { handleAudioCompletion() }
         _fontSizeMultiplier.value = prefs.getFloat("font_size_mult", 1.0f)
+        viewModelScope.launch { TranslationRepository.ensureLoaded(application) }
 
         val lastPage = LastPageRepository.load(application)
         if (lastPage > 1) {

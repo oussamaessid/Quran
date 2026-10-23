@@ -1,5 +1,6 @@
 package app.nouralroh
 
+import androidx.compose.ui.res.stringResource
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -820,7 +821,7 @@ fun AudioPlayer(
                             .clickable { onRetry() }
                             .padding(horizontal = 10.dp, vertical = 6.dp)
                     ) {
-                        Text("Réessayer", fontSize = 10.sp, color = QuranColors.GoldBlaze, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.common_retry), fontSize = 10.sp, color = QuranColors.GoldBlaze, fontWeight = FontWeight.Bold)
                     }
                 }
             } else if (state.durationMs > 0) {
@@ -888,7 +889,7 @@ fun AudioErrorBody(message: String, onRetry: () -> Unit) {
                     .clickable { onRetry() }
                     .padding(horizontal = 20.dp, vertical = 10.dp)
             ) {
-                Text("Réessayer", fontSize = 13.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.common_retry), fontSize = 13.sp, color = Color.White, fontWeight = FontWeight.Bold)
             }
         }
     }

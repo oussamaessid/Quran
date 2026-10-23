@@ -1,5 +1,6 @@
 package app.nouralroh
 
+import androidx.compose.ui.res.stringResource
 import android.annotation.SuppressLint
 import android.content.Context
 import kotlinx.coroutines.launch
@@ -626,7 +627,7 @@ fun TasbihScreen(onBack: () -> Unit) {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         Icon(Icons.Default.Edit, null, tint = QuranColors.Gold.copy(0.7f), modifier = Modifier.size(13.dp))
-                        Text("Personnaliser", color = QuranColors.Gold.copy(0.85f), fontSize = 10.sp,
+                        Text(stringResource(R.string.tasbih_customize), color = QuranColors.Gold.copy(0.85f), fontSize = 10.sp,
                             letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold)
                         if (isCustomMode) {
                             Spacer(Modifier.width(4.dp))
@@ -634,12 +635,12 @@ fun TasbihScreen(onBack: () -> Unit) {
                                 .background(QuranColors.Gold.copy(0.15f))
                                 .border(0.5.dp, QuranColors.Gold.copy(0.35f), RoundedCornerShape(6.dp))
                                 .padding(horizontal = 7.dp, vertical = 2.dp)) {
-                                Text("ACTIF", fontSize = 7.sp, color = QuranColors.GoldBlaze, letterSpacing = 1.sp, fontWeight = FontWeight.Bold)
+                                Text(stringResource(R.string.tasbih_active), fontSize = 7.sp, color = QuranColors.GoldBlaze, letterSpacing = 1.sp, fontWeight = FontWeight.Bold)
                             }
                         }
                     }
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text("Texte du dhikr", color = QuranColors.GoldDim, fontSize = 9.sp, letterSpacing = 0.5.sp)
+                        Text(stringResource(R.string.tasbih_text), color = QuranColors.GoldDim, fontSize = 9.sp, letterSpacing = 0.5.sp)
                         Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp))
                             .background(QuranColors.AppBg)
                             .border(1.dp, if (customTextFocused) QuranColors.Gold.copy(0.55f) else QuranColors.PanelBorder.copy(0.5f), RoundedCornerShape(10.dp))
@@ -667,7 +668,7 @@ fun TasbihScreen(onBack: () -> Unit) {
                         }
                     }
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text("Nombre de répétitions", color = QuranColors.GoldDim, fontSize = 9.sp, letterSpacing = 0.5.sp)
+                        Text(stringResource(R.string.tasbih_repetitions), color = QuranColors.GoldDim, fontSize = 9.sp, letterSpacing = 0.5.sp)
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Box(Modifier.size(36.dp).clip(CircleShape).background(QuranColors.AppBg)
                                 .border(1.dp, QuranColors.PanelBorder.copy(0.6f), CircleShape)
@@ -726,10 +727,10 @@ fun TasbihScreen(onBack: () -> Unit) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 if (saveConfirmed) {
                                     Text("✓", fontSize = 14.sp, color = QuranColors.GoldBright)
-                                    Text("Sauvegardé dans la liste", fontSize = 12.sp, color = QuranColors.GoldBright, fontWeight = FontWeight.SemiBold)
+                                    Text(stringResource(R.string.tasbih_saved), fontSize = 12.sp, color = QuranColors.GoldBright, fontWeight = FontWeight.SemiBold)
                                 } else {
                                     Text("💾", fontSize = 13.sp)
-                                    Text("Ajouter à mes dhikr", fontSize = 12.sp, color = QuranColors.GoldBlaze, fontWeight = FontWeight.SemiBold)
+                                    Text(stringResource(R.string.tasbih_add), fontSize = 12.sp, color = QuranColors.GoldBlaze, fontWeight = FontWeight.SemiBold)
                                 }
                             }
                         }
@@ -820,7 +821,7 @@ fun TasbihScreen(onBack: () -> Unit) {
                 Column {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Text("اختر الذِّكر", color = QuranColors.GoldBlaze, fontSize = 18.sp, fontWeight = FontWeight.Bold, style = TextStyle(textDirection = TextDirection.Rtl))
-                        if (customSaved.isNotEmpty()) Text("${customSaved.size} perso.", color = QuranColors.GoldDim, fontSize = 9.sp, letterSpacing = 0.5.sp)
+                        if (customSaved.isNotEmpty()) Text(stringResource(R.string.tasbih_custom_count, customSaved.size), color = QuranColors.GoldDim, fontSize = 9.sp, letterSpacing = 0.5.sp)
                     }
                     Spacer(Modifier.height(4.dp))
                     Box(Modifier.fillMaxWidth().height(0.5.dp).background(Brush.horizontalGradient(listOf(Color.Transparent, QuranColors.Gold.copy(0.4f), Color.Transparent))))

@@ -1,9 +1,11 @@
 package app.nouralroh
 
+import androidx.compose.ui.res.stringResource
 import android.app.AlarmManager
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.os.PowerManager
 import android.provider.Settings
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -15,6 +17,7 @@ import androidx.compose.ui.platform.LocalContext
 import app.nouralroh.adhan.AdhanPreferences
 import app.nouralroh.adhan.AdhanScheduler
 import app.nouralroh.adhan.AdhanPlaybackService
+import app.nouralroh.widget.openAutostartSettings
 import androidx.core.content.ContextCompat
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -57,6 +60,7 @@ fun SettingsScreen(
     var showPrivacyPolicy by remember { mutableStateOf(false) }
     var adhanEnabled by remember { mutableStateOf(AdhanPreferences.isEnabled(context)) }
     var soundMode by remember { mutableStateOf(AdhanPreferences.soundMode(context)) }
+    val requestNotificationPermission = rememberNotificationPermissionRequest()
 
     BackHandler { onBack() }
 
@@ -90,7 +94,7 @@ fun SettingsScreen(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("الإعدادات", color = QuranColors.GoldBlaze, fontSize = 20.sp,
                         fontWeight = FontWeight.Bold, style = TextStyle(textDirection = TextDirection.Rtl))
-                    Text("Settings", color = QuranColors.GoldDim, fontSize = 9.sp,
+                    Text(stringResource(R.string.settings_title_latin), color = QuranColors.GoldDim, fontSize = 9.sp,
                         letterSpacing = 1.5.sp, fontStyle = FontStyle.Italic)
                 }
                 Spacer(Modifier.weight(1f))
@@ -104,6 +108,7 @@ fun SettingsScreen(
                 onEnabledChange = { enabled ->
                     adhanEnabled = enabled
                     AdhanScheduler.setEnabled(context, enabled)
+                    if (enabled) requestNotificationPermission()
                     if (enabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                         val alarmManager = context.getSystemService(AlarmManager::class.java)
                         if (!alarmManager.canScheduleExactAlarms()) {
@@ -120,7 +125,7 @@ fun SettingsScreen(
                 },
             )
             if (adhanEnabled) {
-                Text("Prières avec Adhan", color = QuranColors.GoldBright, fontSize = 12.sp)
+                Text(stringResource(R.string.adhan_prayers), color = QuranColors.GoldBright, fontSize = 12.sp)
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     listOf("Fajr", "Dhuhr", "Asr", "Maghrib", "Isha").forEach { prayer ->
                         var checked by remember(prayer) { mutableStateOf(AdhanPreferences.isPrayerEnabled(context, prayer)) }
@@ -135,9 +140,9 @@ fun SettingsScreen(
                         )
                     }
                 }
-                Text("Son", color = QuranColors.GoldBright, fontSize = 12.sp)
+                Text(stringResource(R.string.adhan_sound), color = QuranColors.GoldBright, fontSize = 12.sp)
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    listOf("full" to "Adhan complet", "short" to "Court", "silent" to "Silencieux").forEach { (mode, label) ->
+                    listOf("full" to stringResource(R.string.adhan_full), "short" to stringResource(R.string.adhan_short), "silent" to stringResource(R.string.adhan_silent)).forEach { (mode, label) ->
                         FilterChip(selected = soundMode == mode, onClick = {
                             soundMode = mode; AdhanPreferences.setSoundMode(context, mode)
                         }, label = { Text(label, fontSize = 9.sp) })
@@ -146,31 +151,51 @@ fun SettingsScreen(
                 Button(onClick = {
                     ContextCompat.startForegroundService(context, Intent(context, AdhanPlaybackService::class.java)
                         .putExtra(AdhanPlaybackService.EXTRA_PRAYER, "Test"))
-                }, modifier = Modifier.fillMaxWidth()) { Text("Tester l’audio") }
+                }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.adhan_test_audio)) }
                 Button(onClick = { AdhanScheduler.scheduleTest(context) }, modifier = Modifier.fillMaxWidth()) {
-                    Text("Programmer un test dans 1 minute")
+                    Text(stringResource(R.string.adhan_test_1min))
+                }
+                // Xiaomi, Oppo, Huawei… tuent les alarmes en arrière-plan : on guide
+                // l'utilisateur vers les bons réglages, sans permission spéciale (Play).
+                val batteryOptimized = remember {
+                    !context.getSystemService(PowerManager::class.java)
+                        .isIgnoringBatteryOptimizations(context.packageName)
+                }
+                if (batteryOptimized) {
+                    Text(
+                        stringResource(R.string.adhan_bg_hint),
+                        color = QuranColors.TextMuted, fontSize = 11.sp
+                    )
+                    Button(onClick = {
+                        runCatching {
+                            context.startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+                        }.onFailure { openAutostartSettings(context) }
+                    }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.adhan_battery)) }
+                }
+                Button(onClick = { openAutostartSettings(context) }, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.adhan_autostart))
                 }
             }
             SettingsCategoryRow(
                 icon = "🧩",
                 titleArabic = "الودجت",
                 titleLatin = "Widgets",
-                subtitle = "Widget Duʿāʾ pour l'écran d'accueil",
+                subtitle = stringResource(R.string.widgets_sub),
                 onClick = onOpenWidgetDua
             )
             SettingsCategoryRow(
                 icon = "🔒",
                 titleArabic = "سياسة الخصوصية",
-                titleLatin = "Politique de confidentialité",
-                subtitle = "Données utilisées : localisation, publicités",
+                titleLatin = stringResource(R.string.privacy_title),
+                subtitle = stringResource(R.string.privacy_sub),
                 onClick = { showPrivacyPolicy = true }
             )
             if (onOpenAdPrivacyOptions != null) {
                 SettingsCategoryRow(
                     icon = "📢",
                     titleArabic = "خيارات الإعلانات",
-                    titleLatin = "Choix publicitaires",
-                    subtitle = "Modifier votre consentement aux annonces",
+                    titleLatin = stringResource(R.string.ad_choices),
+                    subtitle = stringResource(R.string.ad_choices_sub),
                     onClick = onOpenAdPrivacyOptions
                 )
             }
@@ -199,9 +224,9 @@ private fun AdhanSettingRow(enabled: Boolean, onEnabledChange: (Boolean) -> Unit
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text("أذان الصلاة", fontSize = 15.sp, color = QuranColors.GoldBlaze,
                 fontWeight = FontWeight.Bold, style = TextStyle(textDirection = TextDirection.Rtl))
-            Text("Adhan automatique", fontSize = 11.sp, color = QuranColors.GoldBright,
+            Text(stringResource(R.string.adhan_auto), fontSize = 11.sp, color = QuranColors.GoldBright,
                 fontWeight = FontWeight.Medium)
-            Text(if (enabled) "Actif aux heures de prière" else "Désactivé",
+            Text(if (enabled) stringResource(R.string.adhan_on) else stringResource(R.string.adhan_off),
                 fontSize = 10.sp, color = QuranColors.TextMuted)
         }
         Switch(

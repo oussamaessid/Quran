@@ -115,7 +115,7 @@ class AdhanPlaybackService : Service() {
     private fun notification(prayer: String, ongoing: Boolean = true) = NotificationCompat.Builder(this, CHANNEL_ID)
         .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
         .setContentTitle("Adhan · $prayer")
-        .setContentText("C'est l'heure de la prière")
+        .setContentText(getString(R.string.adhan_time))
         .setContentIntent(
             PendingIntent.getActivity(
                 this, 0, Intent(this, MainActivity::class.java),
@@ -124,7 +124,7 @@ class AdhanPlaybackService : Service() {
         )
         .addAction(
             android.R.drawable.ic_media_pause,
-            "Arrêter",
+            getString(R.string.adhan_stop),
             PendingIntent.getService(
                 this, 1, Intent(this, AdhanPlaybackService::class.java).setAction(ACTION_STOP),
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
@@ -139,7 +139,7 @@ class AdhanPlaybackService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             getSystemService(NotificationManager::class.java).createNotificationChannel(
                 NotificationChannel(CHANNEL_ID, "Adhan", NotificationManager.IMPORTANCE_HIGH).apply {
-                    description = "Lecture de l'adhan aux heures de prière"
+                    description = getString(R.string.adhan_channel_desc)
                     setSound(null, null)
                 },
             )

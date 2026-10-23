@@ -1,5 +1,7 @@
 package app.nouralroh.components
 
+import app.nouralroh.R
+import androidx.compose.ui.res.stringResource
 import android.content.res.Configuration
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -186,7 +188,7 @@ fun TopBar(
                     Icon(
                         imageVector = if (savedCount > 0) Icons.Default.Bookmark
                         else Icons.Default.BookmarkBorder,
-                        contentDescription = "Ayahs sauvegardés",
+                        contentDescription = stringResource(R.string.saved_title),
                         tint     = if (savedCount > 0) QuranColors.Gold else QuranColors.GoldDim,
                         modifier = Modifier.size(iconSize)
                     )

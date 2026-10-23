@@ -28,20 +28,11 @@ class AdManager(private val context: Context) {
 
     companion object {
         private const val TAG = "AdManager"
-
-        // Les builds debug utilisent TOUJOURS les annonces de test Google : un clic sur
-        // une vraie annonce depuis votre propre appareil = trafic invalide (risque AdMob).
         private val TEST = BuildConfig.DEBUG
 
-        // Délai minimum entre deux interstitiels : 60 secondes
-        private const val MIN_INTER_INTERVAL_MS = 60_000L
-
-        // Délai minimum entre deux App Open Ads : 4 heures
+        private const val MIN_INTER_INTERVAL_MS = 3 * 60_000L
         private const val MIN_APP_OPEN_INTERVAL_MS = 4 * 60 * 60 * 1_000L
         private const val PREF_LAST_APP_OPEN_MS = "last_app_open_ms"
-
-        // Si l'App Open arrive plus tard que ça après le lancement, on ne l'affiche pas :
-        // l'utilisateur est déjà en train de toucher l'écran → clic accidentel garanti.
         private const val APP_OPEN_MAX_WAIT_MS = 4_000L
 
         val APP_OPEN_ID: String
@@ -52,37 +43,25 @@ class AdManager(private val context: Context) {
             get() = if (TEST) "ca-app-pub-3940256099942544/1033173712"
             else       "ca-app-pub-2498267529185476/7763292177"
 
-        // Ajoutez l'ID de votre vrai téléphone ici (trouvez-le dans Logcat :
-        // "Use RequestConfiguration.Builder().setTestDeviceIds(Arrays.asList("VOTRE_ID"))")
         private val TEST_DEVICE_IDS = listOf(
             AdRequest.DEVICE_ID_EMULATOR
-            // "VOTRE_ID_APPAREIL_LOGCAT"
         )
     }
-
     private var launchMs = 0L
-
     private val consentInformation: ConsentInformation =
         UserMessagingPlatform.getConsentInformation(context)
     private var adsInitialized = false
 
-    /** true si l'utilisateur (UE/UK…) doit pouvoir modifier son consentement depuis les Paramètres. */
     val isPrivacyOptionsRequired: Boolean
         get() = consentInformation.privacyOptionsRequirementStatus ==
                 ConsentInformation.PrivacyOptionsRequirementStatus.REQUIRED
 
-    /** Rouvre le formulaire de consentement Google (UMP) depuis les Paramètres. */
     fun showPrivacyOptions(activity: Activity) {
         UserMessagingPlatform.showPrivacyOptionsForm(activity) { e ->
             if (e != null) Log.e(TAG, "❌ Privacy options form: ${e.message}")
         }
     }
 
-    /**
-     * Consentement RGPD (UMP) d'abord, puis AdMob. Aucune requête pub n'est faite
-     * tant que le consentement n'autorise pas les annonces.
-     * [allowAppOpen] = false au premier lancement (écran d'installation) : pas d'App Open.
-     */
     fun initAndShowAppOpen(activity: Activity, allowAppOpen: Boolean) {
         launchMs = System.currentTimeMillis()
         val params = ConsentRequestParameters.Builder().apply {
@@ -98,7 +77,6 @@ class AdManager(private val context: Context) {
         }, { e ->
             Log.e(TAG, "❌ Consent info update: ${e.message}")
         })
-        // Consentement déjà obtenu lors d'une session précédente : on n'attend pas le réseau.
         if (consentInformation.canRequestAds()) initAds(activity, allowAppOpen)
     }
 

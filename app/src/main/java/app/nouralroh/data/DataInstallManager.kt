@@ -11,12 +11,18 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.zip.ZipInputStream
 
 object DataInstallManager {
 
     private const val BASE_URL  = "https://raw.githubusercontent.com/oussamaessid/QuranData/refs/heads/main/"
     private const val FLAG_FILE = "quran_data_v1.flag"
+
+    // Les 604 pages + timing.json sont embarquées dans l'APK (~2 Mo) : l'installation
+    // se fait hors ligne en ~1 s. Le téléchargement réseau ne sert plus que de secours.
+    private const val BUNDLED_ZIP = "quran_data.zip"
 
     // Audio is always streamed from CDN — never downloaded at install
     private const val REMOTE_SURAH = "https://download.quranicaudio.com/qdc/mishari_al_afasy/murattal/"
@@ -63,9 +69,15 @@ object DataInstallManager {
 
         val pagesDir  = File(context.filesDir, "quran/pages").also { it.mkdirs() }
         val timingDir = File(context.filesDir, "timing").also       { it.mkdirs() }
+
+        if (runCatching { extractBundled(context, pagesDir, timingDir, onProgress) }.getOrDefault(false)) {
+            File(context.filesDir, FLAG_FILE).createNewFile()
+            return@withContext true
+        }
+
         val semaphore = Semaphore(concurrency)
         val counter   = AtomicInteger(0)
-        var hasError  = false
+        val hasError  = AtomicBoolean(false)
 
         // 604 page JSONs in parallel
         coroutineScope {
@@ -77,7 +89,7 @@ object DataInstallManager {
                             try {
                                 downloadToFile("$BASE_URL$page.json", dest)
                             } catch (e: Exception) {
-                                hasError = true
+                                hasError.set(true)
                                 dest.delete()
                             }
                         }
@@ -93,14 +105,50 @@ object DataInstallManager {
             try {
                 downloadToFile("${BASE_URL}timing.json", timingFile)
             } catch (e: Exception) {
-                hasError = true
+                hasError.set(true)
                 timingFile.delete()
             }
         }
         onProgress(counter.incrementAndGet(), "Timing")
 
-        if (!hasError) File(context.filesDir, FLAG_FILE).createNewFile()
-        !hasError
+        if (!hasError.get()) File(context.filesDir, FLAG_FILE).createNewFile()
+        !hasError.get()
+    }
+
+    /** Extrait les données embarquées dans l'APK. false si l'archive est absente ou incomplète. */
+    private fun extractBundled(
+        context   : Context,
+        pagesDir  : File,
+        timingDir : File,
+        onProgress: (done: Int, label: String) -> Unit
+    ): Boolean {
+        var done = 0
+        ZipInputStream(context.assets.open(BUNDLED_ZIP).buffered()).use { zip ->
+            while (true) {
+                val entry = zip.nextEntry ?: break
+                if (entry.isDirectory) continue
+                val dest = when {
+                    entry.name == "timing.json"        -> File(timingDir, "timing.json")
+                    entry.name.startsWith("pages/") &&
+                        entry.name.endsWith(".json")   -> File(pagesDir, entry.name.substringAfter("pages/"))
+                    else                               -> continue
+                }
+                // Protection zip-slip : jamais en dehors des dossiers attendus.
+                if (dest.parentFile?.canonicalPath != pagesDir.canonicalPath &&
+                    dest.parentFile?.canonicalPath != timingDir.canonicalPath) continue
+                val tmp = File(dest.parent, "${dest.name}.tmp")
+                tmp.outputStream().use { o -> zip.copyTo(o, 16_384) }
+                tmp.renameTo(dest)
+                onProgress(++done, if (entry.name == "timing.json") "Timing" else "Page ${dest.nameWithoutExtension}")
+            }
+        }
+        return isInstalledFiles(context)
+    }
+
+    private fun isInstalledFiles(context: Context): Boolean {
+        if (!File(context.filesDir, "timing/timing.json").exists()) return false
+        val pageCount = File(context.filesDir, "quran/pages").listFiles()?.count { it.name.endsWith(".json") } ?: 0
+        return pageCount == 604
     }
 
     // ── HTTP ──────────────────────────────────────────────────────────────────

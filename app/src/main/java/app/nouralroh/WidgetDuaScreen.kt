@@ -1,5 +1,6 @@
 package app.nouralroh
 
+import androidx.compose.ui.res.stringResource
 import android.content.Context
 import android.content.Intent
 import android.util.Log
@@ -81,7 +82,7 @@ fun WidgetDuaScreen(onBack: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
             Text(
-                "Ajoutez le Widget Duʿāʾ à votre écran d'accueil pour recevoir régulièrement un nouveau Duʿāʾ sans avoir besoin d'ouvrir l'application.",
+                stringResource(R.string.widget_intro),
                 fontSize = 13.sp, color = QuranColors.TextSecondary, lineHeight = 19.sp
             )
 
@@ -94,7 +95,7 @@ fun WidgetDuaScreen(onBack: () -> Unit) {
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = QuranColors.Gold)
             ) {
-                Text("Ajouter le widget", fontWeight = FontWeight.Bold, color = Color(0xFF1A0F00))
+                Text(stringResource(R.string.widget_add), fontWeight = FontWeight.Bold, color = Color(0xFF1A0F00))
             }
         }
     }

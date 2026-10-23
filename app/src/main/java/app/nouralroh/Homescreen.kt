@@ -1,5 +1,6 @@
 package app.nouralroh
 
+import androidx.compose.ui.res.stringResource
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
@@ -45,7 +46,6 @@ import app.nouralroh.viewmodel.PrayerTimesViewModel
 import app.nouralroh.prayer.TUNISIA_CITIES
 import java.time.ZoneId
 import java.time.ZonedDateTime
-import java.util.Calendar
 import kotlinx.coroutines.delay
 
 // ─── HomeScreen — SANS aucun overlay pub Compose ──────────────────────────────
@@ -140,12 +140,12 @@ fun HomeScreen(
                     Spacer(Modifier.height(4.dp))
                     Text("﷽", fontSize = 20.sp, color = QuranColors.GoldDim,
                         textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
-                    NavCardLandscape("📖","القرآن الكريم","Al-Qur'an","604 pages · 114 sourates", onOpenQuran)
-                    NavCardLandscape("🧭","القبلة","Al-Qibla","Direction de la Mecque", onOpenQibla)
-                    NavCardLandscape("📿","التسبيح","Tasbih","Compteur de dhikr", onOpenTasbih)
-                    NavCardLandscape("🤲","الأذكار","Adhkar","Remembrances coraniques", onOpenAdhkar)
-                    NavCardLandscape("🌙","ختم القرآن","Khatm","Suivi de lecture · 30 jours", onOpenKhatm)
-                    NavCardLandscape("🎧","الاستماع","Audio","Écoute · Récitants complets", onOpenAudio)
+                    NavCardLandscape("📖","القرآن الكريم","Al-Qur'an",stringResource(R.string.home_quran_sub), onOpenQuran)
+                    NavCardLandscape("🧭","القبلة","Al-Qibla",stringResource(R.string.home_qibla_sub), onOpenQibla)
+                    NavCardLandscape("📿","التسبيح","Tasbih",stringResource(R.string.home_tasbih_sub), onOpenTasbih)
+                    NavCardLandscape("🤲","الأذكار","Adhkar",stringResource(R.string.home_adhkar_sub), onOpenAdhkar)
+                    NavCardLandscape("🌙","ختم القرآن","Khatm",stringResource(R.string.home_khatm_sub_short), onOpenKhatm)
+                    NavCardLandscape("🎧","الاستماع","Audio",stringResource(R.string.home_audio_sub_short), onOpenAudio)
                     Text("بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ", fontSize = 12.sp,
                         color = QuranColors.GoldDim.copy(alpha = 0.5f),
                         style = TextStyle(textDirection = TextDirection.Rtl),
@@ -188,42 +188,42 @@ fun HomeScreen(
                 Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     NavCardVertical(
                         icon = "📖", titleArabic = "القرآن الكريم", titleLatin = "Al-Qur'an",
-                        subtitle = "604 pages  ·  114 sourates", badge = "LECTURE",
+                        subtitle = stringResource(R.string.home_quran_sub), badge = stringResource(R.string.badge_reading),
                         accentColor = QuranColors.GoldBlaze, titleColor = QuranColors.GoldBlaze,
                         gradientStart = QuranColors.Panel, gradientEnd = QuranColors.AppBg,
                         onClick = onOpenQuran
                     )
                     NavCardVertical(
                         icon = "🎧", titleArabic = "الاستماع إلى القرآن", titleLatin = "Audio",
-                        subtitle = "Écoute · Récitants complets · 114 sourates", badge = "AUDIO",
+                        subtitle = stringResource(R.string.home_audio_sub), badge = "AUDIO",
                         accentColor = QuranColors.GoldBlaze, titleColor = QuranColors.GoldBlaze,
                         gradientStart = QuranColors.Panel, gradientEnd = QuranColors.AppBg,
                         onClick = onOpenAudio
                     )
                     NavCardVertical(
                         icon = "🧭", titleArabic = "القبلة", titleLatin = "Al-Qibla",
-                        subtitle = "Direction de La Mecque", badge = "BOUSSOLE",
+                        subtitle = stringResource(R.string.home_qibla_sub), badge = stringResource(R.string.badge_compass),
                         accentColor = QuranColors.GoldBlaze, titleColor = QuranColors.GoldBlaze,
                         gradientStart = QuranColors.Panel, gradientEnd = QuranColors.AppBg,
                         onClick = onOpenQibla
                     )
                     NavCardVertical(
                         icon = "📿", titleArabic = "التسبيح", titleLatin = "Tasbih",
-                        subtitle = "Compteur de dhikr", badge = "DHIKR",
+                        subtitle = stringResource(R.string.home_tasbih_sub), badge = "DHIKR",
                         accentColor = QuranColors.GoldBlaze, titleColor = QuranColors.GoldBlaze,
                         gradientStart = QuranColors.Panel, gradientEnd = QuranColors.AppBg,
                         onClick = onOpenTasbih
                     )
                     NavCardVertical(
                         icon = "🤲", titleArabic = "الأذكار والأدعية", titleLatin = "Adhkar & Duas",
-                        subtitle = "Remembrances coraniques", badge = "ADHKAR",
+                        subtitle = stringResource(R.string.home_adhkar_sub), badge = "ADHKAR",
                         accentColor = QuranColors.GoldBlaze, titleColor = QuranColors.GoldBlaze,
                         gradientStart = QuranColors.Panel, gradientEnd = QuranColors.AppBg,
                         onClick = onOpenAdhkar
                     )
                     NavCardVertical(
                         icon = "🌙", titleArabic = "ختم القرآن", titleLatin = "Khatm",
-                        subtitle = "Suivi de lecture · 30 jours · Personnalisé", badge = "KHATM",
+                        subtitle = stringResource(R.string.home_khatm_sub), badge = "KHATM",
                         accentColor = QuranColors.GoldBlaze, titleColor = QuranColors.GoldBlaze,
                         gradientStart = QuranColors.Panel, gradientEnd = QuranColors.AppBg,
                         onClick = onOpenKhatm
@@ -241,7 +241,7 @@ fun HomeScreen(
                 .background(QuranColors.Panel.copy(alpha = 0.7f))
                 .border(1.dp, QuranColors.PanelBorder, CircleShape)
         ) {
-            Icon(Icons.Default.Settings, contentDescription = "Settings", tint = QuranColors.GoldDim,
+            Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.settings_title_latin), tint = QuranColors.GoldDim,
                 modifier = Modifier.size(20.dp))
         }
     }
@@ -324,7 +324,7 @@ fun PrayerTimesCard(
                             }
                             Text(pt.cityName, fontSize = 14.sp, color = QuranColors.GoldBright, fontWeight = FontWeight.Bold)
                             TextButton(onClick = onChangeCity, contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
-                                Text("Modifier", fontSize = 9.sp, color = QuranColors.GoldDim)
+                                Text(stringResource(R.string.common_edit), fontSize = 9.sp, color = QuranColors.GoldDim)
                             }
                         }
                         Text(pt.source, fontSize = 8.sp,
@@ -345,7 +345,7 @@ fun PrayerTimesCard(
                         .padding(horizontal = 14.dp, vertical = 10.dp)) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                            Text("PROCHAINE", fontSize = 7.sp, color = QuranColors.GoldDim,
+                            Text(stringResource(R.string.next_prayer), fontSize = 7.sp, color = QuranColors.GoldDim,
                                 letterSpacing = 1.5.sp, fontWeight = FontWeight.Medium)
                             Row(verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(5.dp)) {
@@ -355,7 +355,7 @@ fun PrayerTimesCard(
                             }
                             Text(pt.nextTime, fontSize = 22.sp, color = QuranColors.GoldAccent,
                                 fontWeight = FontWeight.ExtraBold, letterSpacing = 1.sp)
-                            Text("dans $countdown", fontSize = 8.sp, color = QuranColors.GoldDim,
+                            Text(stringResource(R.string.in_time, countdown), fontSize = 8.sp, color = QuranColors.GoldDim,
                                 letterSpacing = 0.5.sp)
                         }
                     }
@@ -500,8 +500,9 @@ fun NavCardVertical(
                     .background(Brush.horizontalGradient(listOf(accentColor.copy(alpha = 0.7f), Color.Transparent))))
                 Text(titleLatin, fontSize = 10.sp, letterSpacing = 1.8.sp,
                     fontWeight = FontWeight.SemiBold, color = accentColor.copy(alpha = 0.75f))
+                // Sous-titre en écriture latine : sens LTR forcé, sinon « 604 » passe en fin de ligne.
                 Text(subtitle, fontSize = 9.sp, color = QuranColors.TextMuted,
-                    style = TextStyle(letterSpacing = 0.3.sp))
+                    style = TextStyle(letterSpacing = 0.3.sp, textDirection = TextDirection.Ltr))
             }
             Column(horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -541,7 +542,8 @@ fun NavCardLandscape(icon: String, titleArabic: String, titleLatin: String, subt
                 fontWeight = FontWeight.Bold, style = TextStyle(textDirection = TextDirection.Rtl))
             Text(titleLatin, fontSize = 11.sp, color = QuranColors.GoldBright,
                 fontWeight = FontWeight.Medium, letterSpacing = 1.sp)
-            Text(subtitle, fontSize = 9.sp, color = QuranColors.TextMuted)
+            Text(subtitle, fontSize = 9.sp, color = QuranColors.TextMuted,
+                style = TextStyle(textDirection = TextDirection.Ltr))
         }
         Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null,
             tint = QuranColors.GoldDim, modifier = Modifier.size(20.dp))
@@ -621,14 +623,15 @@ fun AppHeader() {
             fontSize = if (isLandscape) 22.sp else 28.sp,
             color = QuranColors.GoldBlaze, fontWeight = FontWeight.Bold,
             style = TextStyle(textDirection = TextDirection.Rtl))
-        Text("Application Quran", fontSize = 11.sp, color = QuranColors.GoldWarm,
+        Text(stringResource(R.string.app_subtitle), fontSize = 11.sp, color = QuranColors.GoldWarm,
             fontStyle = FontStyle.Italic, letterSpacing = 2.sp)
         Spacer(Modifier.height(if (isLandscape) 6.dp else 10.dp))
-        val now    = remember { Calendar.getInstance() }
-        val days   = listOf("Dimanche","Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi")
-        val months = listOf("Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc")
-        val dayStr = "${days[now.get(Calendar.DAY_OF_WEEK)-1]} ${now.get(Calendar.DAY_OF_MONTH)} " +
-                "${months[now.get(Calendar.MONTH)]} ${now.get(Calendar.YEAR)}"
+        // Date dans la langue du téléphone (ex. « vendredi 23 oct. 2026 », « Friday 23 Oct 2026 »).
+        val dayStr = remember {
+            java.time.LocalDate.now()
+                .format(java.time.format.DateTimeFormatter.ofPattern("EEEE d MMM yyyy", java.util.Locale.getDefault()))
+                .replaceFirstChar { it.titlecase(java.util.Locale.getDefault()) }
+        }
         Text(dayStr, fontSize = 10.sp, color = QuranColors.GoldDim)
         Spacer(Modifier.height(if (isLandscape) 6.dp else 10.dp))
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -683,13 +686,13 @@ private fun CitySelectionDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Choisir une ville · اختر المدينة") },
+        title = { Text(stringResource(R.string.choose_city)) },
         text = {
             Column(Modifier.heightIn(max = 430.dp).verticalScroll(rememberScrollState())) {
                 TextButton(onClick = onGps, modifier = Modifier.fillMaxWidth()) {
                     Icon(Icons.Default.LocationOn, null)
                     Spacer(Modifier.width(8.dp))
-                    Text("Utiliser ma position GPS")
+                    Text(stringResource(R.string.use_gps))
                 }
                 TUNISIA_CITIES.forEach { city ->
                     TextButton(onClick = { onCity(city) }, modifier = Modifier.fillMaxWidth()) {
@@ -698,7 +701,7 @@ private fun CitySelectionDialog(
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Fermer") } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_close)) } },
     )
 }
 

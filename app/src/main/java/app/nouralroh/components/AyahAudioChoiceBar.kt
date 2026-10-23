@@ -1,10 +1,14 @@
 package app.nouralroh
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,6 +28,7 @@ import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.nouralroh.data.TranslationRepository
 import app.nouralroh.viewmodel.QuranViewModel
 
 @Composable
@@ -32,10 +37,13 @@ fun AyahAudioChoiceBar(
     surahName  : String,
     pageNumber : Int,
     vm         : QuranViewModel,
-    onDismiss  : () -> Unit
+    onDismiss  : () -> Unit,
+    onShare    : (() -> Unit)? = null
 ) {
     val savedAyahs by vm.savedAyahs.collectAsStateWithLifecycle()
     val isSaved = savedAyahs.any { it.verseKey == verseKey }
+    val translationReady by TranslationRepository.ready.collectAsStateWithLifecycle()
+    val translation = if (translationReady) TranslationRepository.text(verseKey) else null
 
     val inf = rememberInfiniteTransition(label = "choiceBorder")
     val borderAlpha by inf.animateFloat(
@@ -111,6 +119,25 @@ fun AyahAudioChoiceBar(
                         )
                     }
 
+                    if (onShare != null) {
+                        Box(
+                            modifier = Modifier
+                                .size(28.dp)
+                                .clip(RoundedCornerShape(7.dp))
+                                .background(QuranColors.AppBg)
+                                .border(1.dp, QuranColors.PanelBorder, RoundedCornerShape(7.dp))
+                                .noRippleClickable { onShare() },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector        = Icons.Default.Share,
+                                contentDescription = stringResource(R.string.common_share),
+                                tint               = QuranColors.GoldDim,
+                                modifier           = Modifier.size(14.dp)
+                            )
+                        }
+                    }
+
                     Box(
                         modifier = Modifier
                             .size(26.dp)
@@ -125,6 +152,20 @@ fun AyahAudioChoiceBar(
                 }
             }
 
+            if (!translation.isNullOrBlank()) {
+                Text(
+                    text       = translation,
+                    fontSize   = 11.sp,
+                    lineHeight = 15.sp,
+                    color      = QuranColors.TextSecondary,
+                    fontStyle  = FontStyle.Italic,
+                    modifier   = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 90.dp)
+                        .verticalScroll(rememberScrollState())
+                )
+            }
+
             HorizontalDivider(color = QuranColors.PanelBorder, thickness = 0.5.dp)
 
             Row(
@@ -132,9 +173,9 @@ fun AyahAudioChoiceBar(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment     = Alignment.CenterVertically
             ) {
-                ChoiceBtn(emoji = "🎵", labelTop = "Tout le",   labelBot = "sourate",   modifier = Modifier.weight(1f), accent = false) { vm.playSurahFull(verseKey) }
-                ChoiceBtn(emoji = "🔊", labelTop = "Ayah",      labelBot = "seulement", modifier = Modifier.weight(1f), accent = true)  { vm.playAyahOnly(verseKey) }
-                ChoiceBtn(emoji = "🎧", labelTop = "Ayah +",    labelBot = "reste",     modifier = Modifier.weight(1f), accent = false) { vm.playAyahAndRest(verseKey) }
+                ChoiceBtn(emoji = "🎵", labelTop = stringResource(R.string.choice_full_top), labelBot = stringResource(R.string.choice_full_bot),   modifier = Modifier.weight(1f), accent = false) { vm.playSurahFull(verseKey) }
+                ChoiceBtn(emoji = "🔊", labelTop = stringResource(R.string.choice_ayah_top), labelBot = stringResource(R.string.choice_ayah_bot), modifier = Modifier.weight(1f), accent = true)  { vm.playAyahOnly(verseKey) }
+                ChoiceBtn(emoji = "🎧", labelTop = stringResource(R.string.choice_rest_top), labelBot = stringResource(R.string.choice_rest_bot),     modifier = Modifier.weight(1f), accent = false) { vm.playAyahAndRest(verseKey) }
             }
         }
     }

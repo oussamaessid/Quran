@@ -170,7 +170,7 @@ private fun DuaContent(entry: DuaEntry, isSmall: Boolean, isLarge: Boolean) {
 @Composable
 private fun EmptyState() {
     Text(
-        text = "Aucun Duʿāʾ disponible pour le moment",
+        text = LocalContext.current.getString(R.string.dua_widget_empty),
         style = TextStyle(color = DuaWidgetColors.dim, fontSize = 11.sp, textAlign = TextAlign.Center),
         maxLines = 3
     )

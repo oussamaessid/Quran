@@ -1,5 +1,7 @@
 package app.nouralroh.components
 
+import app.nouralroh.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -71,14 +73,14 @@ fun SurahIndexSheet(
             Row(Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 7.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment     = Alignment.CenterVertically) {
-                Text("114 Surahs", fontSize = 17.sp, fontWeight = FontWeight.SemiBold,
+                Text(stringResource(R.string.surahs_114), fontSize = 17.sp, fontWeight = FontWeight.SemiBold,
                     color = QuranColors.GoldBright)
                 Text("القرآن الكريم", fontSize = 17.sp, color = QuranColors.GoldDim,
                     style = TextStyle(textDirection = TextDirection.Rtl))
             }
             OutlinedTextField(
                 value = search, onValueChange = { search = it }, singleLine = true,
-                placeholder = { Text("Search surah…", color = QuranColors.TextMuted, fontSize = 13.sp) },
+                placeholder = { Text(stringResource(R.string.search_surah), color = QuranColors.TextMuted, fontSize = 13.sp) },
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor   = QuranColors.GoldDim,
                     unfocusedBorderColor = QuranColors.PanelBorder,

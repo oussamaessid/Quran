@@ -1,5 +1,6 @@
 package app.nouralroh
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -77,7 +78,7 @@ fun InstallScreen(
             )
             Spacer(Modifier.height(4.dp))
             Text(
-                "Application Quran",
+                stringResource(R.string.app_subtitle),
                 fontSize      = 10.sp,
                 color         = QuranColors.GoldWarm,
                 fontStyle     = FontStyle.Italic,
@@ -89,9 +90,9 @@ fun InstallScreen(
 
             // ── State ─────────────────────────────────────────────────────────
             when (val s = state) {
-                is InstallState.Checking         -> LoadingIndicator("Vérification…")
-                is InstallState.AlreadyInstalled -> LoadingIndicator("Chargement…")
-                is InstallState.Done             -> LoadingIndicator("Terminé ✓")
+                is InstallState.Checking         -> LoadingIndicator(stringResource(R.string.install_checking))
+                is InstallState.AlreadyInstalled -> LoadingIndicator(stringResource(R.string.common_loading))
+                is InstallState.Done             -> LoadingIndicator(stringResource(R.string.install_done))
                 is InstallState.Downloading      -> DownloadBlock(s)
                 is InstallState.Error            -> ErrorBlock(s.message) { vm.retry() }
             }
@@ -216,7 +217,7 @@ private fun ErrorBlock(message: String, onRetry: () -> Unit) {
             contentAlignment = Alignment.Center
         ) {
             Text(
-                "Réessayer",
+                stringResource(R.string.common_retry),
                 fontSize   = 14.sp,
                 color      = Color.White,
                 fontWeight = FontWeight.Bold

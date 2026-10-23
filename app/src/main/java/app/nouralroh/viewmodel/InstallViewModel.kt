@@ -1,5 +1,6 @@
 package app.nouralroh.viewmodel
 
+import app.nouralroh.R
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -40,7 +41,7 @@ class InstallViewModel(application: Application) : AndroidViewModel(application)
                 return@launch
             }
 
-            _state.value = InstallState.Downloading(0, DataInstallManager.TOTAL_FILES, "Préparation…")
+            _state.value = InstallState.Downloading(0, DataInstallManager.TOTAL_FILES, getApplication<Application>().getString(R.string.install_preparing))
 
             val success = DataInstallManager.install(
                 context    = getApplication(),
@@ -54,7 +55,7 @@ class InstallViewModel(application: Application) : AndroidViewModel(application)
             }
 
             _state.value = if (success) InstallState.Done
-            else InstallState.Error("Échec du téléchargement.\nVérifiez votre connexion et réessayez.")
+            else InstallState.Error(getApplication<Application>().getString(R.string.install_failed))
         }
     }
 }

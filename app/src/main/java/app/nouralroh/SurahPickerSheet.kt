@@ -1,5 +1,6 @@
 package app.nouralroh
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -64,7 +65,7 @@ fun SurahPickerSheet(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text       = "Select Surah",
+                    text       = stringResource(R.string.choose_surah),
                     fontSize   = 13.sp,
                     color      = QuranColors.GoldBright,
                     fontWeight = FontWeight.SemiBold

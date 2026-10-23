@@ -37,7 +37,7 @@ class AudioPlaybackService : Service() {
         ensureChannel()
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(title)
-            .setContentText("Playing…")
+            .setContentText(getString(R.string.audio_playing))
             .setSmallIcon(android.R.drawable.ic_media_play)
             .setSilent(true)
             .setOngoing(true)
