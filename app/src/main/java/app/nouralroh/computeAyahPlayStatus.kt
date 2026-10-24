@@ -32,6 +32,11 @@ private sealed class RL {
 
 private const val AYAH_NUMBER_SCALE = 0.78f
 
+// En dessous de ce rapport hauteur de ligne / taille de police, la page ajustée
+// à l'écran devient illisible : on passe en hauteur naturelle et on fait défiler.
+private const val MIN_FIT_LINE_RATIO = 1.6f
+private const val NATURAL_LINE_RATIO = 1.9f
+
 private data class Placed(
     val placeable: androidx.compose.ui.layout.Placeable,
     val x: Int,
@@ -115,7 +120,10 @@ fun FlowingMushafText(
     modifier        : Modifier = Modifier,
     // true en paysage : hauteur de ligne naturelle + contenu scrollable
     // (au lieu de tout compresser dans la hauteur de l'écran)
-    scrollable      : Boolean  = false
+    scrollable      : Boolean  = false,
+    // Hauteur visible quand le parent fait défiler verticalement (portrait) :
+    // la page s'y ajuste si elle tient, sinon elle déborde et défile.
+    fitHeight       : Dp       = Dp.Unspecified
 ) {
     val flowElems: List<FlowElem> = remember(quranPage, chapters, showTranslation) {
         val elems      = mutableListOf<FlowElem>()
@@ -156,8 +164,12 @@ fun FlowingMushafText(
     SubcomposeLayout(modifier = modifier) { constraints ->
 
         val availW   = constraints.maxWidth
-        val fullH    = if (scrollable || !constraints.hasBoundedHeight) 0
-                       else constraints.maxHeight.takeIf { it > 0 } ?: 1000
+        val fullH    = when {
+            scrollable                   -> 0
+            fitHeight.isSpecified        -> fitHeight.roundToPx().coerceAtLeast(1)
+            constraints.hasBoundedHeight -> constraints.maxHeight.takeIf { it > 0 } ?: 1000
+            else                         -> 0
+        }
         val vPadPx   = if (scrollable) 8.dp.roundToPx()
                        else (fullH * 0.018f).toInt().coerceAtLeast(4)
         val availH   = (fullH - vPadPx * 2).coerceAtLeast(1)
@@ -314,8 +326,14 @@ fun FlowingMushafText(
                 nTransls   * 0.45f +
                 nGaps      * 0.28f
 
-        val unitH   = if (scrollable) (effectiveFontSize.toPx() * 2.1f).toInt()
-                      else (availH / totalUnits.coerceAtLeast(1f)).toInt().coerceAtLeast(4)
+        val fontPx    = effectiveFontSize.toPx()
+        val fitUnitH  = (availH / totalUnits.coerceAtLeast(1f)).toInt().coerceAtLeast(4)
+        val overflows = !scrollable && fitUnitH < fontPx * MIN_FIT_LINE_RATIO
+        val unitH   = when {
+            scrollable -> (fontPx * 2.1f).toInt()
+            overflows  -> (fontPx * NATURAL_LINE_RATIO).toInt()
+            else       -> fitUnitH
+        }
         val lineHpx = unitH
         val hdrHpx  = (unitH * 1.50f).toInt()
         val bsmHpx  = (unitH * 0.90f).toInt()
@@ -477,7 +495,11 @@ fun FlowingMushafText(
             }
         }
 
-        val layoutH = if (scrollable) yOff + vPadPx * 2 else fullH
+        val layoutH = when {
+            scrollable -> yOff + vPadPx * 2
+            overflows  -> maxOf(yOff + vPadPx * 2, fullH)
+            else       -> fullH
+        }
         layout(availW, layoutH) {
             placed.forEach { (p, x, y) -> p.place(x, y + yStart) }
         }

@@ -19,6 +19,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDirection
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -106,72 +108,79 @@ fun KhatmReadScreen(
 
         Box(Modifier.fillMaxSize().background(QuranColors.Panel)) {
 
-            HorizontalPager(
-                state                   = pagerState,
-                modifier                = Modifier.fillMaxSize(),
-                reverseLayout           = true,
-                beyondViewportPageCount = 1
-            ) { index ->
-                val pageNum = displayPages.getOrNull(index) ?: return@HorizontalPager
-                val isBonus = pageNum == bonusStartPage && pageNum in readPages
+            // Sens du mushaf fixe (page suivante à gauche) même si l'interface est en RTL ;
+            // le contenu de chaque page garde le sens de l'interface.
+            val pageDirection = LocalLayoutDirection.current
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                HorizontalPager(
+                    state                   = pagerState,
+                    modifier                = Modifier.fillMaxSize(),
+                    reverseLayout           = true,
+                    beyondViewportPageCount = 1
+                ) { index ->
+                    CompositionLocalProvider(LocalLayoutDirection provides pageDirection) {
+                        val pageNum = displayPages.getOrNull(index) ?: return@CompositionLocalProvider
+                        val isBonus = pageNum == bonusStartPage && pageNum in readPages
 
-                Box(
-                    Modifier
-                        .fillMaxSize()
-                        .padding(vertical = 6.dp)
-                        .graphicsLayer {
-                            val pageOffset = ((pagerState.currentPage - index) +
-                                    pagerState.currentPageOffsetFraction).coerceIn(-1f, 1f)
-                            val depth = 1f - abs(pageOffset)
-                            scaleX = 0.93f + depth * 0.07f
-                            scaleY = 0.93f + depth * 0.07f
-                            alpha  = 0.6f + depth * 0.4f
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Box(
-                        Modifier
-                            .fillMaxSize()
-                            .shadow(4.dp, RoundedCornerShape(4.dp))
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(QuranColors.PageBackground)
-                            .border(
-                                1.dp,
-                                // ✅ bordure verte pour la page bonus
-                                if (isBonus) Color(0xFF2E6B2E).copy(alpha = 0.6f)
-                                else         QuranColors.PageBorder,
-                                RoundedCornerShape(4.dp)
-                            )
-                    ) {
-                        KhatmMushafPageContent(
-                            pageNumber = pageNum,
-                            chapters   = chapters,
-                            khatmVm    = vm,
-                            quranVm    = quranVm
-                        )
-                    }
-
-                    // ✅ Badge "مراجعة" sur la page bonus
-                    if (isBonus) {
                         Box(
                             Modifier
-                                .align(Alignment.TopStart)
-                                .padding(8.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(Color(0xFF1A3A1A).copy(alpha = 0.9f))
-                                .border(
-                                    0.5.dp,
-                                    Color(0xFF4CAF50).copy(alpha = 0.5f),
-                                    RoundedCornerShape(8.dp)
-                                )
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                                .fillMaxSize()
+                                .padding(vertical = 6.dp)
+                                .graphicsLayer {
+                                    val pageOffset = ((pagerState.currentPage - index) +
+                                            pagerState.currentPageOffsetFraction).coerceIn(-1f, 1f)
+                                    val depth = 1f - abs(pageOffset)
+                                    scaleX = 0.93f + depth * 0.07f
+                                    scaleY = 0.93f + depth * 0.07f
+                                    alpha  = 0.6f + depth * 0.4f
+                                },
+                            contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                "↩ مراجعة",
-                                fontSize  = 10.sp,
-                                color     = Color(0xFF4CAF50),
-                                style     = TextStyle(textDirection = TextDirection.Rtl)
-                            )
+                            Box(
+                                Modifier
+                                    .fillMaxSize()
+                                    .shadow(4.dp, RoundedCornerShape(4.dp))
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(QuranColors.PageBackground)
+                                    .border(
+                                        1.dp,
+                                        // ✅ bordure verte pour la page bonus
+                                        if (isBonus) Color(0xFF2E6B2E).copy(alpha = 0.6f)
+                                        else         QuranColors.PageBorder,
+                                        RoundedCornerShape(4.dp)
+                                    )
+                            ) {
+                                KhatmMushafPageContent(
+                                    pageNumber = pageNum,
+                                    chapters   = chapters,
+                                    khatmVm    = vm,
+                                    quranVm    = quranVm
+                                )
+                            }
+
+                            // ✅ Badge "مراجعة" sur la page bonus
+                            if (isBonus) {
+                                Box(
+                                    Modifier
+                                        .align(Alignment.TopStart)
+                                        .padding(8.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(Color(0xFF1A3A1A).copy(alpha = 0.9f))
+                                        .border(
+                                            0.5.dp,
+                                            Color(0xFF4CAF50).copy(alpha = 0.5f),
+                                            RoundedCornerShape(8.dp)
+                                        )
+                                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                                ) {
+                                    Text(
+                                        "↩ مراجعة",
+                                        fontSize  = 10.sp,
+                                        color     = Color(0xFF4CAF50),
+                                        style     = TextStyle(textDirection = TextDirection.Rtl)
+                                    )
+                                }
+                            }
                         }
                     }
                 }

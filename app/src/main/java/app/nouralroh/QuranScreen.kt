@@ -51,6 +51,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -80,6 +81,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -690,65 +693,72 @@ fun MushafPager(
     }
 
     Box(modifier) {
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier.fillMaxSize(),
-            beyondViewportPageCount = 1,
-            key = { it }
-        ) { pagerIndex ->
-            val pageNum = indexToPage(pagerIndex)
-            val pageState = pages[pageNum]
+        // Sens du mushaf fixe (page suivante à gauche) même si l'interface est en RTL ;
+        // le contenu de chaque page garde le sens de l'interface.
+        val pageDirection = LocalLayoutDirection.current
+        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize(),
+                beyondViewportPageCount = 1,
+                key = { it }
+            ) { pagerIndex ->
+                CompositionLocalProvider(LocalLayoutDirection provides pageDirection) {
+                    val pageNum = indexToPage(pagerIndex)
+                    val pageState = pages[pageNum]
 
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .padding(vertical = pagePadV)
-                    .graphicsLayer {
-                        val pageOffset = ((pagerState.currentPage - pagerIndex) +
-                                pagerState.currentPageOffsetFraction).coerceIn(-1f, 1f)
-                        val depth = 1f - abs(pageOffset)
-                        scaleX = 0.93f + depth * 0.07f
-                        scaleY = 0.93f + depth * 0.07f
-                        alpha  = 0.6f + depth * 0.4f
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-                Box(
-                    Modifier
-                        .fillMaxSize()
-                        .shadow(4.dp, RoundedCornerShape(4.dp))
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(QuranColors.PageBackground)
-                        .border(1.dp, QuranColors.PageBorder, RoundedCornerShape(4.dp))
-                ) {
-                    when (pageState) {
-                        null, is UiState.Loading -> LoadingState(stringResource(R.string.loading_page, pageNum), light = true)
-                        is UiState.Error -> ErrorState(pageState.message) { onRetry(pageNum) }
-                        is UiState.Success -> if (pageNum == 605 || pageNum == 606) {
-                            val screenH = LocalConfiguration.current.screenHeightDp.dp
-                            DuaKhatmPageContent(
-                                pageNumber   = pageNum,
-                                topStripH    = screenH * 0.024f,
-                                bottomStripH = screenH * 0.016f
-                            )
-                        } else {
-                            MushafPageContent(
-                                quranPage         = pageState.data,
-                                chapters          = chapters,
-                                showTranslation   = showTranslation,
-                                selectedAyahKey   = selectedAyahKey,
-                                audioHighlight    = audioHighlight,
-                                showAudioSheet    = showAudioSheet,
-                                audioChoiceMade   = audioChoiceMade,
-                                showSurahAudioBar  = showSurahAudioBar,
-                                savedAyahKeys      = savedAyahKeys,
-                                fontSizeMultiplier = fontSizeMultiplier,
-                                pageNumber         = pageNumber,
-                                surahName          = surahName,
-                                vm                 = vm,
-                                onAyahSelected     = onAyahSelected,
-                                onDismissAudio     = onDismissAudio
-                            )
+                    Box(
+                        Modifier
+                            .fillMaxSize()
+                            .padding(vertical = pagePadV)
+                            .graphicsLayer {
+                                val pageOffset = ((pagerState.currentPage - pagerIndex) +
+                                        pagerState.currentPageOffsetFraction).coerceIn(-1f, 1f)
+                                val depth = 1f - abs(pageOffset)
+                                scaleX = 0.93f + depth * 0.07f
+                                scaleY = 0.93f + depth * 0.07f
+                                alpha  = 0.6f + depth * 0.4f
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Box(
+                            Modifier
+                                .fillMaxSize()
+                                .shadow(4.dp, RoundedCornerShape(4.dp))
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(QuranColors.PageBackground)
+                                .border(1.dp, QuranColors.PageBorder, RoundedCornerShape(4.dp))
+                        ) {
+                            when (pageState) {
+                                null, is UiState.Loading -> LoadingState(stringResource(R.string.loading_page, pageNum), light = true)
+                                is UiState.Error -> ErrorState(pageState.message) { onRetry(pageNum) }
+                                is UiState.Success -> if (pageNum == 605 || pageNum == 606) {
+                                    val screenH = LocalConfiguration.current.screenHeightDp.dp
+                                    DuaKhatmPageContent(
+                                        pageNumber   = pageNum,
+                                        topStripH    = screenH * 0.024f,
+                                        bottomStripH = screenH * 0.016f
+                                    )
+                                } else {
+                                    MushafPageContent(
+                                        quranPage         = pageState.data,
+                                        chapters          = chapters,
+                                        showTranslation   = showTranslation,
+                                        selectedAyahKey   = selectedAyahKey,
+                                        audioHighlight    = audioHighlight,
+                                        showAudioSheet    = showAudioSheet,
+                                        audioChoiceMade   = audioChoiceMade,
+                                        showSurahAudioBar  = showSurahAudioBar,
+                                        savedAyahKeys      = savedAyahKeys,
+                                        fontSizeMultiplier = fontSizeMultiplier,
+                                        pageNumber         = pageNumber,
+                                        surahName          = surahName,
+                                        vm                 = vm,
+                                        onAyahSelected     = onAyahSelected,
+                                        onDismissAudio     = onDismissAudio
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -910,7 +920,9 @@ fun MushafPageContent(
         val topStripH = if (isLandscape) 22.dp else maxHeight * 0.024f
         val bottomStripH = if (isLandscape) 18.dp else maxHeight * 0.016f
 
-        if (!isCenteredPage) {
+        // Les pages centrées (1-2, 602+) ont des lignes fixes : agrandies, elles
+        // dépasseraient l'écran, on les fait alors passer par le texte fluide.
+        if (!isCenteredPage || fontSizeMultiplier > 1f) {
             val extraPadH = maxWidth * 0.016f
             val flowFontSp = (maxWidth.value * (if (isLandscape) 0.038f else 0.05f) * fontSizeMultiplier).sp
 
@@ -921,11 +933,14 @@ fun MushafPageContent(
                     .padding(horizontal = padH, vertical = padV)
             ) {
                 PageTopStrip(quranPage, topStripH)
-                Box(
+                BoxWithConstraints(
                     (if (isLandscape) Modifier else Modifier.weight(1f))
                         .fillMaxWidth()
                         .padding(horizontal = extraPadH)
                 ) {
+                    // En portrait, si les versets ne tiennent pas (grande police,
+                    // traduction), la page défile verticalement jusqu'à sa fin.
+                    val viewportH = maxHeight
                     FlowingMushafText(
                         quranPage = quranPage,
                         chapters = chapters,
@@ -938,8 +953,10 @@ fun MushafPageContent(
                         wordPositionMap = wordPositionMap,
                         fontSize = flowFontSp,
                         onAyahSelected = onAyahSelected,
-                        modifier = if (isLandscape) Modifier.fillMaxWidth() else Modifier.fillMaxSize(),
-                        scrollable = isLandscape
+                        modifier = if (isLandscape) Modifier.fillMaxWidth()
+                                   else Modifier.fillMaxWidth().verticalScroll(scrollState),
+                        scrollable = isLandscape,
+                        fitHeight = if (isLandscape) Dp.Unspecified else viewportH
                     )
                 }
                 PageBottomStrip(quranPage, bottomStripH)
