@@ -256,7 +256,7 @@ fun MushafLine(
         val availH = constraints.maxHeight
         if (sorted.isEmpty()) return@SubcomposeLayout layout(availW, availH) {}
 
-        val placeables = sorted.mapIndexed { i, item ->
+        fun measureWords(size: TextUnit, slotPrefix: String) = sorted.mapIndexed { i, item ->
             val verseKey = item.verse.verseKey
             val isEnd    = item.word.charTypeName == "end"
 
@@ -297,12 +297,12 @@ fun MushafLine(
                 else -> AyahPlayStatus.NORMAL
             }
 
-            subcompose("w_$i") {
+            subcompose("${slotPrefix}_$i") {
                 WordChip(
                     word         = item.word,
                     verseNumber  = item.verse.verseNumber,
-                    fontSize     = fontSize,
-                    endFontSize  = fontSize,
+                    fontSize     = size,
+                    endFontSize  = size,
                     lineHeightPx = availH,
                     isAyah       = isAyah,
                     isAudioWord  = isAudioWord,
@@ -316,6 +316,21 @@ fun MushafLine(
                 constraints.copy(minWidth = 0, minHeight = availH, maxHeight = availH)
             )
         }
+
+        val naturalPlaceables = measureWords(fontSize, "w")
+        val naturalWidth = naturalPlaceables.sumOf { it.width }
+        val naturalGaps = (naturalPlaceables.size - 1).coerceAtLeast(0) * 2
+
+        // Conserver les coupures de lignes du Mushaf, même avec une grande
+        // police. Seule une ligne qui dépasserait est ramenée à la largeur
+        // disponible, avec une petite marge contre le bord de l'écran.
+        val requiredWidth = naturalWidth + naturalGaps
+        val fitScale = if (requiredWidth > availW && requiredWidth > 0) {
+            (availW.toFloat() / requiredWidth.toFloat() * 0.98f).coerceAtMost(1f)
+        } else 1f
+        val placeables = if (fitScale < 1f) {
+            measureWords(fontSize * fitScale, "fit")
+        } else naturalPlaceables
 
         val n      = placeables.size
         val totalW = placeables.sumOf { it.width }
@@ -373,7 +388,7 @@ fun WordChip(
         else                                 -> QuranColors.ArabicText
     }
 
-    val fontWeight = if (isAudioWord) FontWeight.ExtraBold else FontWeight.Bold
+    val fontWeight = if (isAudioWord) FontWeight.Bold else FontWeight.Normal
 
     Box(
         modifier = Modifier
@@ -445,4 +460,3 @@ fun LtrRow(
 fun LtrLayout(content: @Composable () -> Unit) {
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr, content = content)
 }
-

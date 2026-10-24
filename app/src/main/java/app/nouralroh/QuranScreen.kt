@@ -920,9 +920,9 @@ fun MushafPageContent(
         val topStripH = if (isLandscape) 22.dp else maxHeight * 0.024f
         val bottomStripH = if (isLandscape) 18.dp else maxHeight * 0.016f
 
-        // Les pages centrées (1-2, 602+) ont des lignes fixes : agrandies, elles
-        // dépasseraient l'écran, on les fait alors passer par le texte fluide.
-        if (!isCenteredPage || fontSizeMultiplier > 1f) {
+        // Les pages centrées gardent toujours leurs lignes Mushaf d'origine.
+        // MushafLine ajuste localement une ligne si elle devient trop large.
+        if (!isCenteredPage) {
             val extraPadH = maxWidth * 0.016f
             val flowFontSp = (maxWidth.value * (if (isLandscape) 0.038f else 0.05f) * fontSizeMultiplier).sp
 
@@ -1001,7 +1001,9 @@ fun MushafPageContent(
         val unitH = if (isLandscape) {
             with(density) { fontSize.toDp() } * 2.1f
         } else if (isShortPage) {
-            contentH * 0.068f
+            // Sur les pages 1 et 2, le zoom agrandit aussi l'interligne tout en
+            // conservant exactement les coupures de lignes de la page normale.
+            contentH * 0.068f * fontSizeMultiplier
         } else {
             val totalUnits =
                 numLines * 1.00f + nHeaders * 2.80f + nBismillah * 1.50f + nEnds * 0.55f + nGaps * 0.03f
@@ -1016,7 +1018,11 @@ fun MushafPageContent(
         Column(
             Modifier
                 .fillMaxSize()
-                .then(if (isLandscape) Modifier.verticalScroll(scrollState) else Modifier)
+                .then(
+                    if (isLandscape || (isShortPage && fontSizeMultiplier > 1f)) {
+                        Modifier.verticalScroll(scrollState)
+                    } else Modifier
+                )
                 .padding(horizontal = padH, vertical = padV)
         ) {
             PageTopStrip(quranPage, topStripH)
